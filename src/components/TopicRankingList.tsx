@@ -86,7 +86,7 @@ export default function TopicRankingList({ data, maxItems = 10 }: TopicRankingLi
             
             {/* Additional metrics on hover */}
             <div className="hidden group-hover:flex justify-between text-xs text-gray-500 mt-1 transition-all">
-              <span>Occurrences: {topic.totalOccurrences.toLocaleString()}</span>
+              <span>Occurrences: {(topic.totalOccurrences || topic.callCount).toLocaleString()}</span>
               <span>Confidence: {confidence.toFixed(0)}%</span>
             </div>
           </div>
