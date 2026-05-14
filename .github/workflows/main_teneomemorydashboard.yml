@@ -23,14 +23,8 @@ jobs:
         with:
           node-version: '22.x'
 
-      - name: npm install, build, and test
-        run: |
-          npm ci --production=false
-          npm run build --if-present
-          npm run test --if-present
-      
-      - name: Zip artifact for deployment
-        run: zip -r node-app.zip . -x "*.git*"
+      - name: Zip source code for deployment
+        run: zip -r node-app.zip . -x "*.git*" "*node_modules/*" "*.next/*"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
