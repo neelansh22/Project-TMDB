@@ -52,4 +52,4 @@ jobs:
           app-name: 'teneomemorydashboard'
           slot-name: 'Production'
           package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_0357EC517ECD43E4BA61A3CD4BD3ACC1 }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
