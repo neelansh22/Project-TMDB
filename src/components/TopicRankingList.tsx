@@ -3,11 +3,11 @@
 interface TopicData {
   intentName: string;
   intentCategory: string;
-  intentDescription: string;
+  intentDescription?: string;
   callCount: number;
   percentage: string;
   avgConfidence: number;
-  totalOccurrences: number;
+  totalOccurrences?: number;
 }
 
 interface TopicRankingListProps {
