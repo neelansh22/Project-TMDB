@@ -17,12 +17,15 @@ const GeographicHeatmap = dynamic(
 );
 
 interface TopicData {
-  topic: string;
-  call_count: number;
-  percentage: number;
-  avg_sentiment_score: number;
-  completion_rate: number;
-  resolution_rate: number;
+  intentName: string;
+  intentCategory: string;
+  intentDescription?: string;
+  callCount: number;
+  percentage: string;
+  avgConfidence: number;
+  totalOccurrences?: number;
+  primaryIntentCount?: number;
+  callPercentage?: number;
 }
 
 interface GeoData {
