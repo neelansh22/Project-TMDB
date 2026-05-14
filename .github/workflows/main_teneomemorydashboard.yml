@@ -42,11 +42,14 @@ jobs:
         with:
           name: node-app
       
+      - name: Unzip source code
+        run: unzip node-app.zip -d deploy
+      
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'teneomemorydashboard'
           slot-name: 'Production'
-          package: node-app.zip
+          package: deploy
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
