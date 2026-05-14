@@ -1,14 +1,11 @@
-name: Deploy to Azure App Service
+name: Deploy to Azure App Service (DISABLED - use main_teneomemorydashboard.yml)
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 env:
   NODE_VERSION: '20.x'
-  AZURE_WEBAPP_NAME: teneo-memory-dashboard
+  AZURE_WEBAPP_NAME: teneomemorydashboard
 
 jobs:
   build-and-deploy:
