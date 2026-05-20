@@ -25,7 +25,7 @@ export async function GET(request: Request) {
         c.total_turns AS totalTurns,
         cs.status_name AS callOutcome,
         CASE WHEN c.successful_resolution IN ('True', '1') THEN 'Resolved' ELSE 'Unresolved' END AS resolutionStatus,
-        CASE WHEN c.was_transferred IN ('True', '1') THEN 1 ELSE 0 END AS transferCount,
+        CASE WHEN c.transfer_reason_id IS NOT NULL AND c.transfer_reason_id != '' THEN 1 ELSE 0 END AS transferCount,
         i.intent_name AS intentName,
         ci.confidence_score AS intentConfidence,
         i.intent_category AS intentCategory
