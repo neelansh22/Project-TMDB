@@ -18,23 +18,23 @@ export async function GET(request: Request) {
       SELECT DISTINCT
         c.call_id AS callId,
         c.channel AS channel,
-        CAST(c.call_start_timestamp AS DATE) AS callDate,
+        TRY_CAST(c.call_start_timestamp AS DATE) AS callDate,
         c.call_start_timestamp AS callStartTime,
-        c.duration_seconds AS duration,
+        CAST(c.duration_seconds AS INT) AS duration,
         c.avg_satisfaction_score AS customerSentiment,
-        c.total_turns AS totalTurns,
+        CAST(c.total_turns AS INT) AS totalTurns,
         cs.status_name AS callOutcome,
         CASE WHEN c.successful_resolution IN ('True', '1') THEN 'Resolved' ELSE 'Unresolved' END AS resolutionStatus,
         CASE WHEN c.transfer_reason_id IS NOT NULL AND c.transfer_reason_id != '' THEN 1 ELSE 0 END AS transferCount,
         i.intent_name AS intentName,
-        ci.confidence_score AS intentConfidence,
+        CAST(ci.confidence_score AS FLOAT) AS intentConfidence,
         i.intent_category AS intentCategory
       FROM [TeneoMemory].[CallIntents] ci
       JOIN [TeneoMemory].[Intents] i ON ci.intent_id = i.intent_id
       JOIN [TeneoMemory].[Sessions] c ON ci.call_id = c.call_id
       LEFT JOIN [TeneoMemory].[CallStatuses] cs ON c.call_status_id = cs.call_status_id
       WHERE i.intent_name = @intentName
-      ORDER BY c.call_start_timestamp DESC
+      ORDER BY c.call_id DESC
     `;
 
     const results = await query(sql, { intentName: intentName });
