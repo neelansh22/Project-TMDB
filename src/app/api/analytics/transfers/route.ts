@@ -10,9 +10,9 @@ export async function GET(request: Request) {
 
     let sqlQuery = `
       SELECT 
+        reasonName,
         reasonCategory,
-        reasonDetail,
-        severityLevel,
+        reasonDescription,
         SUM(transferCount) as transferCount,
         AVG(percentageOfTransfers) as percentageOfTransfers,
         AVG(percentageOfAllCalls) as percentageOfAllCalls,
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     }
 
     sqlQuery += `
-      GROUP BY reasonCategory, reasonDetail, severityLevel
+      GROUP BY reasonName, reasonCategory, reasonDescription
       ORDER BY SUM(transferCount) DESC
     `;
 

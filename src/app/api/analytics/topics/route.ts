@@ -16,7 +16,6 @@ export async function GET(request: Request) {
         SUM(callCount) as callCount,
         SUM(totalOccurrences) as totalOccurrences,
         AVG(avgConfidence) as avgConfidence,
-        SUM(primaryIntentCount) as primaryIntentCount,
         AVG(callPercentage) as callPercentage
       FROM [TeneoMemory].[vw_TopicsBreakdown]
       WHERE 1=1

@@ -7,9 +7,9 @@ import Sidebar from '@/components/Sidebar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
 
 interface TransferData {
+  reasonName: string;
   reasonCategory: string;
-  reasonDetail: string;
-  severityLevel: string;
+  reasonDescription: string;
   transferCount: number;
   percentageOfTransfers: number;
   avgDurationSeconds: number;
@@ -37,12 +37,6 @@ interface ErrorSummary {
   callsWithUnsupportedScenarios: number;
   unsupportedScenarioRate: string;
 }
-
-const SEVERITY_COLORS: { [key: string]: string } = {
-  'High': '#ef4444',
-  'Medium': '#f59e0b',
-  'Low': '#10b981'
-};
 
 const CHART_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981'];
 
@@ -133,10 +127,10 @@ export default function OperationsPage() {
 
   // Prepare chart data for transfers
   const transferChartData = transferData.slice(0, 10).map(t => ({
-    name: t.reasonDetail.length > 30 ? t.reasonDetail.substring(0, 30) + '...' : t.reasonDetail,
+    name: t.reasonName.length > 30 ? t.reasonName.substring(0, 30) + '...' : t.reasonName,
     count: t.transferCount,
     percentage: t.percentageOfTransfers,
-    severity: t.severityLevel
+    category: t.reasonCategory
   }));
 
   // Prepare pie chart for error types
@@ -282,9 +276,9 @@ export default function OperationsPage() {
             <table className="w-full text-sm">
               <thead className="border-b border-gray-800">
                 <tr className="text-left">
-                  <th className="pb-3 pr-4 font-semibold text-gray-400">Severity</th>
                   <th className="pb-3 pr-4 font-semibold text-gray-400">Category</th>
                   <th className="pb-3 pr-4 font-semibold text-gray-400">Reason</th>
+                  <th className="pb-3 pr-4 font-semibold text-gray-400">Description</th>
                   <th className="pb-3 pr-4 font-semibold text-gray-400 text-right">Count</th>
                   <th className="pb-3 pr-4 font-semibold text-gray-400 text-right">% of Transfers</th>
                   <th className="pb-3 pr-4 font-semibold text-gray-400 text-right">Avg Duration</th>
@@ -294,18 +288,12 @@ export default function OperationsPage() {
                 {transferData.map((transfer, index) => (
                   <tr key={index} className="hover:bg-gray-850 transition-colors">
                     <td className="py-3 pr-4">
-                      <span 
-                        className="px-2 py-1 rounded text-xs font-medium"
-                        style={{ 
-                          backgroundColor: `${SEVERITY_COLORS[transfer.severityLevel]}20`,
-                          color: SEVERITY_COLORS[transfer.severityLevel]
-                        }}
-                      >
-                        {transfer.severityLevel}
+                      <span className="px-2 py-1 rounded text-xs font-medium bg-indigo-900/30 text-indigo-400">
+                        {transfer.reasonCategory}
                       </span>
                     </td>
-                    <td className="py-3 pr-4 text-gray-300">{transfer.reasonCategory}</td>
-                    <td className="py-3 pr-4 text-white">{transfer.reasonDetail}</td>
+                    <td className="py-3 pr-4 text-white font-medium">{transfer.reasonName}</td>
+                    <td className="py-3 pr-4 text-gray-300">{transfer.reasonDescription}</td>
                     <td className="py-3 pr-4 text-right font-medium">
                       {transfer.transferCount.toLocaleString()}
                     </td>
@@ -381,7 +369,7 @@ export default function OperationsPage() {
           </a>
         </div>
       </div>
-    </div>
+      </div>
     </div>
   );
 }
