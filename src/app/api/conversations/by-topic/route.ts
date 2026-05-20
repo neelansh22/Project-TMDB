@@ -21,7 +21,7 @@ export async function GET(request: Request) {
         CAST(c.call_start_timestamp AS DATE) AS callDate,
         c.call_start_timestamp AS callStartTime,
         c.duration_seconds AS duration,
-        c.satisfaction_category AS customerSentiment,
+        c.avg_satisfaction_score AS customerSentiment,
         c.total_turns AS totalTurns,
         cs.status_name AS callOutcome,
         CASE WHEN c.successful_resolution IN ('True', '1') THEN 'Resolved' ELSE 'Unresolved' END AS resolutionStatus,
