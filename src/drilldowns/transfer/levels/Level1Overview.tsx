@@ -62,9 +62,9 @@ export default function TransferOverview({
   }));
 
   const getSentimentIcon = (score: number) => {
-    if (score >= 0.7) return <TrendingUp className=\"w-4 h-4 text-green-500\" />;
-    if (score >= 0.4) return <Minus className=\"w-4 h-4 text-gray-400\" />;
-    return <TrendingDown className=\"w-4 h-4 text-red-500\" />;
+    if (score >= 0.7) return <TrendingUp className="w-4 h-4 text-green-500" />;
+    if (score >= 0.4) return <Minus className="w-4 h-4 text-gray-400" />;
+    return <TrendingDown className="w-4 h-4 text-red-500" />;
   };
 
   return (
