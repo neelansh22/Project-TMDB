@@ -23,12 +23,13 @@ export default function TransferCallsList({
   onDrill,
   isLoading,
 }: DrilldownLevelProps<Level2Data>) {
-  if (!data) return null;
+  if (!data || !data.calls) return null;
 
   // Calculate summary stats
-  const resolvedCount = data.calls.filter(c => c.resolutionStatus === 'Resolved').length;
-  const avgDuration = data.calls.reduce((sum, c) => sum + (c.duration || 0), 0) / data.calls.length;
-  const avgTimeToTransfer = data.calls.reduce((sum, c) => sum + (c.metadata?.timeBeforeTransfer || 0), 0) / data.calls.length;
+  const calls = data.calls || [];
+  const resolvedCount = calls.filter(c => c.resolutionStatus === 'Resolved').length;
+  const avgDuration = calls.length > 0 ? calls.reduce((sum, c) => sum + (c.duration || 0), 0) / calls.length : 0;
+  const avgTimeToTransfer = calls.length > 0 ? calls.reduce((sum, c) => sum + (c.metadata?.timeBeforeTransfer || 0), 0) / calls.length : 0;
 
   return (
     <div className="space-y-6">
@@ -58,7 +59,7 @@ export default function TransferCallsList({
             <div className="text-2xl font-bold text-green-700 mt-1">
               {resolvedCount}
               <span className="text-sm text-gray-600 ml-2">
-                ({((resolvedCount / data.calls.length) * 100).toFixed(0)}%)
+                ({calls.length > 0 ? ((resolvedCount / calls.length) * 100).toFixed(0) : 0}%)
               </span>
             </div>
           </div>
@@ -81,7 +82,7 @@ export default function TransferCallsList({
 
       {/* Call List */}
       <CallListView
-        calls={data.calls}
+        calls={calls}
         fields={transferCallFields}
         onCallClick={(callId) => onDrill({ callId })}
         isLoading={isLoading}

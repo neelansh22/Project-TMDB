@@ -7,7 +7,7 @@
 
 'use client';
 
-import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface BubbleData {
   name: string;
@@ -118,20 +118,16 @@ export default function ImpactBubbles({
           />
           <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3' }} />
           
-          <Scatter
-            data={data}
-            onClick={(item) => onBubbleClick?.(item)}
-            cursor="pointer"
-          >
-            {data.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={getColor(entry, index)}
-                fillOpacity={0.8}
-                className="hover:fill-opacity-100 transition-all"
-              />
-            ))}
-          </Scatter>
+          {data.map((entry, index) => (
+            <Scatter
+              key={`scatter-${index}`}
+              data={[entry]}
+              onClick={() => onBubbleClick?.(entry)}
+              cursor="pointer"
+              fill={getColor(entry, index)}
+              fillOpacity={0.8}
+            />
+          ))}
         </ScatterChart>
       </ResponsiveContainer>
 
