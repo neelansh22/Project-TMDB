@@ -46,7 +46,7 @@ export default function DrilldownHeader({
   actions,
 }: DrilldownHeaderProps) {
   return (
-    <div className="sticky top-0 z-50 bg-white border-b border-gray-200">
+    <div className="sticky top-0 z-50 bg-gray-800 border-b border-gray-700">
       {/* Main Header Row */}
       <div className="px-6 py-4">
         <div className="flex items-center justify-between">
@@ -55,7 +55,7 @@ export default function DrilldownHeader({
             {onBack && (
               <button
                 onClick={onBack}
-                className="flex-shrink-0 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                className="flex-shrink-0 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
                 aria-label="Go back"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -79,7 +79,7 @@ export default function DrilldownHeader({
             {actions}
             <button
               onClick={onClose}
-              className="flex-shrink-0 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex-shrink-0 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
               aria-label="Close"
             >
               <X className="w-5 h-5" />

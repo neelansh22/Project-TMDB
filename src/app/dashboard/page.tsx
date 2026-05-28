@@ -68,10 +68,10 @@ export default function DashboardPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="text-center">
-          <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-600 mb-4" />
-          <p className="text-gray-600">Loading dashboard...</p>
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-400 mb-4" />
+          <p className="text-gray-400">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -82,20 +82,20 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-900">
       <Sidebar userEmail={session?.user?.email} />
       
       <div className="flex-1">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <header className="bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
           <div className="px-8 py-4 flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
-              <p className="text-sm text-gray-600">Key performance indicators at a glance</p>
+              <h1 className="text-2xl font-bold text-white">Dashboard Overview</h1>
+              <p className="text-sm text-gray-400">Key performance indicators at a glance</p>
             </div>
             <button
               onClick={fetchMetrics}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
               Refresh
@@ -171,8 +171,8 @@ export default function DashboardPage() {
             </div>
 
             {/* Sentiment Chart */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Sentiment Trends</h2>
+            <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 p-6 mb-8">
+              <h2 className="text-lg font-semibold text-white mb-4">Sentiment Trends</h2>
               <SentimentChart />
             </div>
           </>

@@ -13,7 +13,7 @@ import { DrilldownConfig } from '@/types/drilldown';
 import { transferDrilldownConfig } from './config';
 import TransferOverview from './levels/Level1Overview';
 import TransferCallsList from './levels/Level2CallsList';
-import ConversationViewer from '@/components/ConversationViewer';
+import Level3ConversationWrapper from './levels/Level3ConversationWrapper';
 
 /**
  * Enhanced config with custom components for each level
@@ -33,7 +33,7 @@ export const transferDrilldownConfigWithComponents: DrilldownConfig = {
       },
       {
         ...transferDrilldownConfig.levels.configs[2],
-        customComponent: ConversationViewer,
+        customComponent: Level3ConversationWrapper,
       },
     ],
   },

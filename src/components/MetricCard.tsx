@@ -21,12 +21,12 @@ const iconMap = {
 };
 
 const colorMap = {
-  blue: 'bg-blue-100 text-blue-600',
-  green: 'bg-green-100 text-green-600',
-  yellow: 'bg-yellow-100 text-yellow-600',
-  red: 'bg-red-100 text-red-600',
-  purple: 'bg-purple-100 text-purple-600',
-  indigo: 'bg-indigo-100 text-indigo-600',
+  blue: 'bg-blue-900/30 text-blue-400',
+  green: 'bg-green-900/30 text-green-400',
+  yellow: 'bg-yellow-900/30 text-yellow-400',
+  red: 'bg-red-900/30 text-red-400',
+  purple: 'bg-purple-900/30 text-purple-400',
+  indigo: 'bg-indigo-900/30 text-indigo-400',
 };
 
 export default function MetricCard({ title, value, subtitle, icon, color, drilldownId, onClick }: MetricCardProps) {
@@ -42,9 +42,9 @@ export default function MetricCard({ title, value, subtitle, icon, color, drilld
 
   return (
     <div 
-      className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 transition-all ${
+      className={`bg-gray-800 rounded-lg shadow-sm border border-gray-700 p-6 transition-all ${
         isClickable 
-          ? 'cursor-pointer hover:shadow-lg hover:border-blue-300 hover:-translate-y-0.5' 
+          ? 'cursor-pointer hover:shadow-lg hover:border-blue-500 hover:-translate-y-0.5' 
           : 'hover:shadow-md'
       }`}
       onClick={handleClick}
@@ -53,7 +53,7 @@ export default function MetricCard({ title, value, subtitle, icon, color, drilld
       onKeyDown={isClickable ? (e) => e.key === 'Enter' && handleClick() : undefined}
     >
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-gray-600">{title}</h3>
+        <h3 className="text-sm font-medium text-gray-400">{title}</h3>
         <div className="flex items-center gap-2">
           <div className={`p-2 rounded-lg ${colorMap[color]}`}>
             <Icon className="w-5 h-5" />
@@ -64,11 +64,11 @@ export default function MetricCard({ title, value, subtitle, icon, color, drilld
         </div>
       </div>
       <div className="space-y-1">
-        <p className="text-3xl font-bold text-gray-900">{value}</p>
-        {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+        <p className="text-3xl font-bold text-white">{value}</p>
+        {subtitle && <p className="text-sm text-gray-400">{subtitle}</p>}
       </div>
       {isClickable && (
-        <div className="mt-3 text-xs font-medium text-blue-600">
+        <div className="mt-3 text-xs font-medium text-blue-400">
           Click to explore →
         </div>
       )}

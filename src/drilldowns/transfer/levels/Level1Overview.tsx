@@ -71,43 +71,43 @@ export default function TransferOverview({
     <div className="p-6 space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
-          <div className="text-sm text-purple-700 font-medium">Total Transfers</div>
-          <div className="text-3xl font-bold text-purple-900 mt-1">
+        <div className="bg-gradient-to-br from-purple-900/40 to-purple-800/40 rounded-lg p-4 border border-purple-700/30">
+          <div className="text-sm text-purple-300 font-medium">Total Transfers</div>
+          <div className="text-3xl font-bold text-purple-100 mt-1">
             {data.totalTransfers}
           </div>
-          <div className="text-sm text-purple-600 mt-1">
+          <div className="text-sm text-purple-400 mt-1">
             {data.transferRate}% of all calls
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
-          <div className="text-sm text-blue-700 font-medium">Transfer Reasons</div>
-          <div className="text-3xl font-bold text-blue-900 mt-1">
+        <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/40 rounded-lg p-4 border border-blue-700/30">
+          <div className="text-sm text-blue-300 font-medium">Transfer Reasons</div>
+          <div className="text-3xl font-bold text-blue-100 mt-1">
             {data.reasons.length}
           </div>
-          <div className="text-sm text-blue-600 mt-1">
+          <div className="text-sm text-blue-400 mt-1">
             Unique categories
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
-          <div className="text-sm text-green-700 font-medium">Avg Resolution Rate</div>
-          <div className="text-3xl font-bold text-green-900 mt-1">
+        <div className="bg-gradient-to-br from-green-900/40 to-green-800/40 rounded-lg p-4 border border-green-700/30">
+          <div className="text-sm text-green-300 font-medium">Avg Resolution Rate</div>
+          <div className="text-3xl font-bold text-green-100 mt-1">
             {(data.reasons.reduce((sum, r) => sum + r.resolutionRate, 0) / data.reasons.length).toFixed(1)}%
           </div>
-          <div className="text-sm text-green-600 mt-1">
+          <div className="text-sm text-green-400 mt-1">
             After transfer
           </div>
         </div>
       </div>
 
       {/* Visualization with Toggle */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Transfer Analysis</h3>
-            <p className="text-sm text-gray-600 mt-1">
+            <h3 className="text-lg font-semibold text-white">Transfer Analysis</h3>
+            <p className="text-sm text-gray-400 mt-1">
               {viewMode === 'bar' 
                 ? 'Transfer count by reason with resolution rate color coding'
                 : 'Bubble size = frequency | Y-axis = resolution rate after transfer'}
@@ -119,7 +119,7 @@ export default function TransferOverview({
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 viewMode === 'bar'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
               <BarChart3 className="w-4 h-4" />
@@ -130,7 +130,7 @@ export default function TransferOverview({
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 viewMode === 'bubble'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
               <Sparkles className="w-4 h-4" />
@@ -167,7 +167,7 @@ export default function TransferOverview({
 
       {/* Transfer Reasons Breakdown */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <h3 className="text-lg font-semibold text-white mb-4">
           Transfer Reasons Breakdown
         </h3>
         <div className="space-y-3">
@@ -175,26 +175,26 @@ export default function TransferOverview({
             <button
               key={reason.reasonId}
               onClick={() => onDrill({ reasonId: reason.reasonId, reasonName: reason.reasonName })}
-              className="w-full bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all text-left group"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all text-left group"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0 space-y-2">
                   {/* Reason Name and Category */}
                   <div className="flex items-center gap-3">
-                    <h4 className="font-semibold text-gray-900">{reason.reasonName}</h4>
-                    <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded font-medium">
+                    <h4 className="font-semibold text-white">{reason.reasonName}</h4>
+                    <span className="text-xs px-2 py-0.5 bg-gray-700 text-gray-300 rounded font-medium">
                       {reason.reasonCategory}
                     </span>
                   </div>
 
                   {/* Description */}
-                  <p className="text-sm text-gray-600">{reason.reasonDescription}</p>
+                  <p className="text-sm text-gray-400">{reason.reasonDescription}</p>
 
                   {/* Metrics */}
                   <div className="grid grid-cols-4 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-600">Transfers:</span>
-                      <span className="ml-2 font-semibold text-gray-900">
+                      <span className="text-gray-400">Transfers:</span>
+                      <span className="ml-2 font-semibold text-white">
                         {reason.transferCount}
                       </span>
                       <span className="ml-1 text-gray-500">
@@ -203,27 +203,27 @@ export default function TransferOverview({
                     </div>
 
                     <div>
-                      <span className="text-gray-600">Resolution:</span>
+                      <span className="text-gray-400">Resolution:</span>
                       <span className={`ml-2 font-semibold ${
-                        reason.resolutionRate >= 70 ? 'text-green-700' :
-                        reason.resolutionRate >= 40 ? 'text-yellow-700' :
-                        'text-red-700'
+                        reason.resolutionRate >= 70 ? 'text-green-400' :
+                        reason.resolutionRate >= 40 ? 'text-yellow-400' :
+                        'text-red-400'
                       }`}>
                         {reason.resolutionRate.toFixed(1)}%
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-600">Sentiment:</span>
+                      <span className="text-gray-400">Sentiment:</span>
                       {getSentimentIcon(reason.avgSentiment)}
-                      <span className="font-semibold text-gray-900">
+                      <span className="font-semibold text-white">
                         {reason.avgSentiment.toFixed(2)}
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-gray-600">Avg Time:</span>
-                      <span className="ml-2 font-semibold text-gray-900">
+                      <span className="text-gray-400">Avg Time:</span>
+                      <span className="ml-2 font-semibold text-white">
                         {Math.floor(reason.avgTimeBeforeTransfer / 60)}m {reason.avgTimeBeforeTransfer % 60}s
                       </span>
                     </div>
@@ -231,7 +231,7 @@ export default function TransferOverview({
                 </div>
 
                 {/* Arrow */}
-                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 flex-shrink-0 mt-1" />
+                <ArrowRight className="w-5 h-5 text-gray-500 group-hover:text-blue-400 flex-shrink-0 mt-1" />
               </div>
             </button>
           ))}

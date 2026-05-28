@@ -104,7 +104,7 @@ export default function DrilldownModal({
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
-          className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col pointer-events-auto overflow-hidden"
+          className="bg-gray-800 rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col pointer-events-auto overflow-hidden border border-gray-700"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -178,15 +178,15 @@ function DrilldownLevelRenderer({
   // For now, show a placeholder - specific implementations will override with customComponent
   return (
     <div className="p-6">
-      <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-        <p className="text-gray-600">
+      <div className="bg-gray-900 border-2 border-dashed border-gray-700 rounded-lg p-8 text-center">
+        <p className="text-gray-400">
           Level {level} content ({vizType} visualization)
         </p>
         <p className="text-sm text-gray-500 mt-2">
           Custom component should be provided in config
         </p>
         {data && (
-          <pre className="mt-4 text-left text-xs bg-white p-4 rounded border border-gray-200 overflow-auto max-h-64">
+          <pre className="mt-4 text-left text-xs bg-gray-800 p-4 rounded border border-gray-700 overflow-auto max-h-64 text-gray-300">
             {JSON.stringify(data, null, 2)}
           </pre>
         )}
