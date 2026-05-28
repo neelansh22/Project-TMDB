@@ -69,22 +69,28 @@ export default function DrilldownModal({
   if (!isOpen) return null;
 
   // Generate breadcrumbs
-  const breadcrumbs = state.history.map((item, index) => ({
-    level: item.level,
-    label: typeof config.levels.configs[item.level - 1]?.title === 'function'
-      ? config.levels.configs[item.level - 1].title(item.data)
-      : config.levels.configs[item.level - 1]?.title || `Level ${item.level}`,
-  }));
+  const breadcrumbs = state.history.map((item, index) => {
+    const levelConfig = config.levels.configs[item.level - 1];
+    const titleValue = levelConfig?.title;
+    return {
+      level: item.level,
+      label: typeof titleValue === 'function'
+        ? titleValue(item.data)
+        : titleValue || `Level ${item.level}`,
+    };
+  });
 
   // Get title and subtitle
-  const title = typeof currentLevelConfig.title === 'function'
-    ? currentLevelConfig.title(data)
-    : currentLevelConfig.title;
+  const titleValue = currentLevelConfig.title;
+  const title = typeof titleValue === 'function'
+    ? titleValue(data)
+    : titleValue;
 
-  const subtitle = currentLevelConfig.subtitle
-    ? typeof currentLevelConfig.subtitle === 'function'
-      ? currentLevelConfig.subtitle(data)
-      : currentLevelConfig.subtitle
+  const subtitleValue = currentLevelConfig.subtitle;
+  const subtitle = subtitleValue
+    ? typeof subtitleValue === 'function'
+      ? subtitleValue(data)
+      : subtitleValue
     : undefined;
 
   return (
