@@ -7,8 +7,6 @@
 'use client';
 
 import { DrilldownLevelProps, DrilldownCallData } from '@/types/drilldown';
-import CallListView from '@/components/drilldown/CallListView';
-import { transferCallFields } from '../config';
 
 interface Level2Data {
   reasonName: string;
@@ -80,15 +78,77 @@ export default function TransferCallsList({
         </div>
       </div>
 
-      {/* Call List */}
-      <CallListView
-        calls={calls}
-        fields={transferCallFields}
-        onCallClick={(callId) => onDrill({ callId })}
-        isLoading={isLoading}
-        emptyMessage="No calls found for this transfer reason"
-        variant="list"
-      />
+      {/* Calls Table */}
+      <div className="bg-white rounded-lg border border-gray-200">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="border-b border-gray-200 bg-gray-50">
+              <tr className="text-left">
+                <th className="py-3 px-4 font-semibold text-gray-700">Date</th>
+                <th className="py-3 px-4 font-semibold text-gray-700">Channel</th>
+                <th className="py-3 px-4 font-semibold text-gray-700">Duration</th>
+                <th className="py-3 px-4 font-semibold text-gray-700">Turns</th>
+                <th className="py-3 px-4 font-semibold text-gray-700">Sentiment Journey</th>
+                <th className="py-3 px-4 font-semibold text-gray-700">Outcome</th>
+                <th className="py-3 px-4 font-semibold text-gray-700">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {calls.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-gray-500">
+                    No calls found for this transfer reason
+                  </td>
+                </tr>
+              ) : (
+                calls.map((call) => (
+                  <tr key={call.callId} className="hover:bg-gray-50 transition-colors">
+                    <td className="py-3 px-4 text-gray-900">
+                      {call.callDate ? new Date(call.callDate).toLocaleDateString() : 'N/A'}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                        {call.channel || 'Unknown'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-gray-900">
+                      {call.duration ? `${Math.floor(call.duration / 60)}m ${call.duration % 60}s` : 'N/A'}
+                    </td>
+                    <td className="py-3 px-4 text-gray-900">
+                      {call.totalTurns || 'N/A'}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-gray-700">
+                        {call.initialSentiment || 'Unknown'} → {call.finalSentiment || 'Unknown'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        call.resolutionStatus === 'Resolved'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {call.resolutionStatus || 'Unknown'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <button
+                        onClick={() => {
+                          console.log('Drilling to call:', call.callId);
+                          onDrill({ callId: call.callId });
+                        }}
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors"
+                      >
+                        View Chat
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

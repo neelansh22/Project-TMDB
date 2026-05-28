@@ -1,14 +1,16 @@
 /**
  * Transfer Drilldown - Level 1: Overview
  * 
- * Shows transfer reasons with bubble visualization and breakdown list
+ * Shows transfer reasons with bar/bubble visualization and breakdown list
  */
 
 'use client';
 
+import { useState } from 'react';
 import { DrilldownLevelProps } from '@/types/drilldown';
 import ImpactBubbles from '@/components/drilldown/visualizations/ImpactBubbles';
-import { ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import TransferBarChart from '@/components/drilldown/visualizations/TransferBarChart';
+import { ArrowRight, TrendingUp, TrendingDown, Minus, BarChart3, Sparkles } from 'lucide-react';
 
 interface TransferReason {
   reasonId: string;
@@ -34,6 +36,8 @@ export default function TransferOverview({
   onDrill,
   isLoading,
 }: DrilldownLevelProps<Level1Data>) {
+  const [viewMode, setViewMode] = useState<'bar' | 'bubble'>('bar');
+
   if (!data) return null;
 
   // Transform data for bubble chart
@@ -49,10 +53,18 @@ export default function TransferOverview({
     },
   }));
 
+  // Transform data for bar chart
+  const barData = data.reasons.map((reason) => ({
+    name: reason.reasonName,
+    count: reason.transferCount,
+    resolutionRate: reason.resolutionRate,
+    category: reason.reasonCategory,
+  }));
+
   const getSentimentIcon = (score: number) => {
-    if (score >= 0.7) return <TrendingUp className="w-4 h-4 text-green-500" />;
-    if (score >= 0.4) return <Minus className="w-4 h-4 text-gray-400" />;
-    return <TrendingDown className="w-4 h-4 text-red-500" />;
+    if (score >= 0.7) return <TrendingUp className=\"w-4 h-4 text-green-500\" />;
+    if (score >= 0.4) return <Minus className=\"w-4 h-4 text-gray-400\" />;
+    return <TrendingDown className=\"w-4 h-4 text-red-500\" />;
   };
 
   return (
@@ -90,25 +102,67 @@ export default function TransferOverview({
         </div>
       </div>
 
-      {/* Bubble Visualization */}
+      {/* Visualization with Toggle */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Transfer Impact Clusters</h3>
-          <p className="text-sm text-gray-600 mt-1">
-            Bubble size = frequency | Y-axis = resolution rate after transfer
-          </p>
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Transfer Analysis</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              {viewMode === 'bar' 
+                ? 'Transfer count by reason with resolution rate color coding'
+                : 'Bubble size = frequency | Y-axis = resolution rate after transfer'}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setViewMode('bar')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                viewMode === 'bar'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              Bar Chart
+            </button>
+            <button
+              onClick={() => setViewMode('bubble')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                viewMode === 'bubble'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              Bubble Chart
+            </button>
+          </div>
         </div>
-        <ImpactBubbles
-          data={bubbleData}
-          onBubbleClick={(item) => {
-            const reason = data.reasons.find(r => r.reasonName === item.name);
-            if (reason) {
-              onDrill({ reasonId: reason.reasonId, reasonName: reason.reasonName });
-            }
-          }}
-          colorScheme="impact"
-          showLabels
-        />
+
+        {viewMode === 'bar' ? (
+          <TransferBarChart
+            data={barData}
+            onBarClick={(item) => {
+              const reason = data.reasons.find(r => r.reasonName === item.name);
+              if (reason) {
+                onDrill({ reasonId: reason.reasonId, reasonName: reason.reasonName });
+              }
+            }}
+            showLabels
+          />
+        ) : (
+          <ImpactBubbles
+            data={bubbleData}
+            onBubbleClick={(item) => {
+              const reason = data.reasons.find(r => r.reasonName === item.name);
+              if (reason) {
+                onDrill({ reasonId: reason.reasonId, reasonName: reason.reasonName });
+              }
+            }}
+            colorScheme="impact"
+            showLabels
+          />
+        )}
       </div>
 
       {/* Transfer Reasons Breakdown */}
