@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import MetricCard from '@/components/MetricCard';
 import SentimentChart from '@/components/SentimentChart';
+import DrilldownModal from '@/components/drilldown/DrilldownModal';
+import { getDrilldownConfig } from '@/drilldowns/registry';
 import { RefreshCw } from 'lucide-react';
 
 interface MetricsSummary {
@@ -30,6 +32,7 @@ export default function DashboardPage() {
   const [metrics, setMetrics] = useState<MetricsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeDrilldown, setActiveDrilldown] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -130,6 +133,8 @@ export default function DashboardPage() {
                 value={`${metrics.transferRate}%`}
                 subtitle={`${metrics.transferredCalls.toLocaleString()} transferred`}
                 icon="transfer"
+                drilldownId="transfer-rate"
+                onClick={() => setActiveDrilldown('transfer-rate')}
                 color="yellow"
               />
               <MetricCard
@@ -172,6 +177,15 @@ export default function DashboardPage() {
             </div>
           </>
         )}
+
+      {/* Drilldown Modal */}
+      {activeDrilldown && (
+        <DrilldownModal
+          isOpen={true}
+          onClose={() => setActiveDrilldown(null)}
+          config={getDrilldownConfig(activeDrilldown)!}
+        />
+      )}
         </main>
       </div>
     </div>
