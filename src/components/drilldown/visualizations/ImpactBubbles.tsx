@@ -81,7 +81,7 @@ export default function ImpactBubbles({
           </p>
           {data.metadata && Object.entries(data.metadata).map(([key, value]) => (
             <p key={key} className="text-gray-300 text-sm">
-              {key}: <span className="text-white font-semibold">{value}</span>
+              {key}: <span className="text-white font-semibold">{String(value)}</span>
             </p>
           ))}
         </div>
