@@ -13,23 +13,28 @@ import { ArrowRightLeft } from 'lucide-react';
  */
 export const transferCallFields: DataFieldConfig[] = [
   {
-    key: 'timeBeforeTransfer',
-    label: 'Time to Transfer',
+    key: 'channel',
+    label: 'Channel',
+    type: 'text',
+  },
+  {
+    key: 'duration',
+    label: 'Duration',
     type: 'duration',
     sortable: true,
   },
   {
-    key: 'intent',
-    label: 'Intent',
-    type: 'text',
+    key: 'totalTurns',
+    label: 'Turns',
+    type: 'number',
   },
   {
     key: 'sentimentJourney',
     label: 'Sentiment Journey',
     type: 'text',
     format: (value, row) => {
-      const before = row?.sentimentBeforeTransfer || 'Unknown';
-      const after = row?.sentimentAfterTransfer || 'Unknown';
+      const before = row?.initialSentiment || 'Unknown';
+      const after = row?.finalSentiment || 'Unknown';
       return `${before} → ${after}`;
     },
   },
@@ -37,11 +42,6 @@ export const transferCallFields: DataFieldConfig[] = [
     key: 'resolutionStatus',
     label: 'Outcome',
     type: 'status',
-  },
-  {
-    key: 'customerProfile',
-    label: 'Customer',
-    type: 'text',
   },
 ];
 

@@ -63,21 +63,12 @@ export async function GET(request: Request) {
         c.avg_satisfaction_score AS customerSentiment,
         c.initial_sentiment_category AS initialSentiment,
         c.final_sentiment_category AS finalSentiment,
-        cs.status_name AS callOutcome,
         CASE WHEN c.successful_resolution IN ('True', '1') THEN 'Resolved' ELSE 'Unresolved' END AS resolutionStatus,
         CASE WHEN c.successful_resolution IN ('True', '1') THEN 1 ELSE 0 END AS successfulResolution,
-        i.intent_name AS intent,
-        i.intent_category AS intentCategory,
-        ci.confidence_score AS intentConfidence,
-        cp.profile_name AS customerProfile,
-        cp.profile_tier AS customerTier,
         c.duration_seconds AS timeBeforeTransfer,
-        tr.reason_name AS transferReason
+        tr.reason_name AS transferReason,
+        tr.reason_category AS transferCategory
       FROM [TeneoMemory].[Sessions] c
-      LEFT JOIN [TeneoMemory].[CallStatuses] cs ON c.call_status_id = cs.call_status_id
-      LEFT JOIN [TeneoMemory].[CallIntents] ci ON c.call_id = ci.call_id
-      LEFT JOIN [TeneoMemory].[Intents] i ON ci.intent_id = i.intent_id
-      LEFT JOIN [TeneoMemory].[CallerProfiles] cp ON c.caller_phone_number = cp.phone_number
       LEFT JOIN [TeneoMemory].[TransferReasons] tr ON c.transfer_reason_id = tr.transfer_reason_id
       WHERE c.transfer_reason_id = @reasonId
       ORDER BY c.call_start_timestamp DESC
@@ -97,14 +88,9 @@ export async function GET(request: Request) {
       customerSentiment: row.customerSentiment || 'Neutral',
       initialSentiment: row.initialSentiment,
       finalSentiment: row.finalSentiment,
-      callOutcome: row.callOutcome || 'Unknown',
+      callOutcome: row.resolutionStatus || 'Unknown',
       resolutionStatus: row.resolutionStatus,
       successfulResolution: row.successfulResolution === 1,
-      intent: row.intent,
-      intentCategory: row.intentCategory,
-      intentConfidence: row.intentConfidence ? parseFloat(row.intentConfidence) : undefined,
-      customerProfile: row.customerProfile,
-      customerTier: row.customerTier,
       wasTransferred: true,
       transferReason: row.transferReason,
       timeBeforeTransfer: row.timeBeforeTransfer ? parseInt(row.timeBeforeTransfer) : undefined,
