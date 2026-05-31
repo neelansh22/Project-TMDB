@@ -379,6 +379,9 @@ export interface DrilldownLevelProps<TData = any> {
   /** Navigate forward handler */
   onDrill: (filters: Record<string, any>) => void;
   
+  /** Navigate back handler */
+  onBack?: () => void;
+  
   /** Loading state */
   isLoading?: boolean;
   

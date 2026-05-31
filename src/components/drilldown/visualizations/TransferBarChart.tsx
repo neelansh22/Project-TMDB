@@ -52,7 +52,7 @@ export default function TransferBarChart({
   };
 
   return (
-    <div className="w-full h-full min-h-[400px]">
+    <div className="w-full h-full min-h-[400px] bg-gray-900/50 rounded-lg p-4">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 20, right: 20, bottom: 60, left: 60 }}>
           <XAxis

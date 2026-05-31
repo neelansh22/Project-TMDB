@@ -21,6 +21,7 @@ export default function Level3ConversationWrapper({
   data,
   context,
   onDrill,
+  onBack,
   isLoading,
 }: DrilldownLevelProps<Level3Data>) {
   // Extract callId from context (filters) - this is passed from Level 2
@@ -48,8 +49,10 @@ export default function Level3ConversationWrapper({
       <ConversationViewer
         callId={callId}
         onClose={() => {
-          // In drilldown context, we don't close - user uses back button
-          console.log('Close requested from ConversationViewer (noop in drilldown)');
+          // Navigate back to Level 2 when close button is clicked
+          if (onBack) {
+            onBack();
+          }
         }}
       />
     </div>

@@ -129,6 +129,7 @@ export default function DrilldownModal({
                 level={state.currentLevel}
                 data={data}
                 onDrill={actions.drillForward}
+                onBack={state.currentLevel > 1 ? actions.goBack : undefined}
                 context={state.filters}
               />
             )}
@@ -147,6 +148,7 @@ interface DrilldownLevelRendererProps {
   level: number;
   data: any;
   onDrill: (filters: Record<string, any>) => void;
+  onBack?: () => void;
   context: Record<string, any>;
 }
 
@@ -155,6 +157,7 @@ function DrilldownLevelRenderer({
   level,
   data,
   onDrill,
+  onBack,
   context,
 }: DrilldownLevelRendererProps) {
   const levelConfig = config.levels.configs[level - 1];
@@ -167,6 +170,7 @@ function DrilldownLevelRenderer({
         data={data}
         config={levelConfig}
         onDrill={onDrill}
+        onBack={onBack}
         context={context}
       />
     );
