@@ -102,7 +102,6 @@ export default function ImpactBubbles({
             hide
             tick={false}
             axisLine={false}
-            domain={[0, 100]}
           />
           <YAxis
             type="number"
