@@ -147,30 +147,32 @@ export default function TransferOverview({
           </div>
         </div>
 
-        {viewMode === 'bar' ? (
-          <TransferBarChart
-            data={barData}
-            onBarClick={(item) => {
-              const reason = data.reasons.find(r => r.reasonName === item.name);
-              if (reason) {
-                onDrill({ reasonId: reason.reasonId, reasonName: reason.reasonName });
-              }
-            }}
-            showLabels
-          />
-        ) : (
-          <ImpactBubbles
-            data={bubbleData}
-            onBubbleClick={(item) => {
-              const reason = data.reasons.find(r => r.reasonName === item.name);
-              if (reason) {
-                onDrill({ reasonId: reason.reasonId, reasonName: reason.reasonName });
-              }
-            }}
-            colorScheme="impact"
-            showLabels
-          />
-        )}
+        <div className="h-[500px] w-full">
+          {viewMode === 'bar' ? (
+            <TransferBarChart
+              data={barData}
+              onBarClick={(item) => {
+                const reason = data.reasons.find(r => r.reasonName === item.name);
+                if (reason) {
+                  onDrill({ reasonId: reason.reasonId, reasonName: reason.reasonName });
+                }
+              }}
+              showLabels
+            />
+          ) : (
+            <ImpactBubbles
+              data={bubbleData}
+              onBubbleClick={(item) => {
+                const reason = data.reasons.find(r => r.reasonName === item.name);
+                if (reason) {
+                  onDrill({ reasonId: reason.reasonId, reasonName: reason.reasonName });
+                }
+              }}
+              colorScheme="impact"
+              showLabels
+            />
+          )}
+        </div>
       </div>
 
       {/* Transfer Reasons Breakdown */}
