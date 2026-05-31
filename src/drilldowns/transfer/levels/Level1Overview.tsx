@@ -38,7 +38,15 @@ export default function TransferOverview({
 }: DrilldownLevelProps<Level1Data>) {
   const [viewMode, setViewMode] = useState<'bar' | 'bubble'>('bar');
 
-  if (!data) return null;
+  if (!data || !data.reasons || data.reasons.length === 0) {
+    return (
+      <div className="p-6">
+        <div className="text-center text-gray-400 py-8">
+          {isLoading ? 'Loading transfer data...' : 'No transfer data available'}
+        </div>
+      </div>
+    );
+  }
 
   // Transform data for bubble chart
   const bubbleData = data.reasons.map((reason, index) => ({
