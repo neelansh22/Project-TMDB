@@ -63,11 +63,11 @@ export default function DrilldownHeader({
             )}
             
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold text-gray-900 truncate">
+              <h2 className="text-xl font-bold text-white truncate">
                 {title}
               </h2>
               {subtitle && (
-                <p className="text-sm text-gray-600 mt-0.5 truncate">
+                <p className="text-sm text-gray-400 mt-0.5 truncate">
                   {subtitle}
                 </p>
               )}
@@ -94,7 +94,7 @@ export default function DrilldownHeader({
           <nav className="flex items-center gap-2 text-sm">
             <button
               onClick={() => onJumpToLevel?.(1)}
-              className="flex items-center gap-1 text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-1 text-gray-400 hover:text-white transition-colors"
               aria-label="Jump to overview"
             >
               <Home className="w-4 h-4" />
@@ -106,12 +106,12 @@ export default function DrilldownHeader({
                 {index < breadcrumbs.length - 1 ? (
                   <button
                     onClick={() => onJumpToLevel?.(item.level)}
-                    className="text-gray-600 hover:text-gray-900 transition-colors hover:underline"
+                    className="text-gray-400 hover:text-white transition-colors hover:underline"
                   >
                     {item.label}
                   </button>
                 ) : (
-                  <span className="text-gray-900 font-medium">
+                  <span className="text-white font-medium">
                     {item.label}
                   </span>
                 )}

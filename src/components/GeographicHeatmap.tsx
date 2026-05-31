@@ -104,8 +104,8 @@ export default function GeographicHeatmap({ data }: GeographicHeatmapProps) {
   return (
     <div className="w-full h-full rounded-lg overflow-hidden shadow-2xl border border-gray-800">
       <MapContainer
-        center={[centerLat || 39.0, centerLon || 35.0]} // Default to Turkey center
-        zoom={6}
+        center={[centerLat || 39.8283, centerLon || -98.5795]} // Default to United States center
+        zoom={4}
         style={{ height: '100%', width: '100%', background: '#1f2937' }}
         className="z-0"
       >
