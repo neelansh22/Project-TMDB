@@ -24,73 +24,22 @@ export async function GET(request: Request) {
       );
     }
 
-    // Get error type info - should match the categorization in overview API
+    // Get error type info based on severity level
     const getErrorInfo = (errorType: string): { category: string; description: string } => {
-      if (errorType === 'System Error') return { category: 'System', description: 'Technical or system-level failures' };
-      if (errorType === 'Understanding Error') return { category: 'Intent', description: 'Bot failed to understand user input' };
-      if (errorType === 'Data Error') return { category: 'Data', description: 'Missing or unavailable data' };
-      if (errorType === 'Performance Error') return { category: 'Performance', description: 'Timeout or performance issues' };
-      if (errorType.includes('Fallback') || errorType.includes('Unknown')) return { category: 'Understanding', description: 'Intent recognition failures' };
+      if (errorType === 'High Frequency Errors') 
+        return { category: 'Critical', description: 'Calls with 5 or more errors requiring immediate attention' };
+      if (errorType === 'Multiple Errors') 
+        return { category: 'High', description: 'Calls with 3-4 errors showing recurring issues' };
+      if (errorType === 'Moderate Errors') 
+        return { category: 'Medium', description: 'Calls with 2 errors indicating minor problems' };
+      if (errorType === 'Single Error') 
+        return { category: 'Low', description: 'Calls with a single error occurrence' };
       return { category: 'Other', description: 'Other technical errors' };
     };
 
     const errorInfo = getErrorInfo(errorType);
 
-    // Get distinct call IDs that have this specific error type
-    // Using the same categorization logic as overview
-    const errorCallsQuery = `
-      WITH ErrorTurns AS (
-        SELECT DISTINCT
-          ct.callId,
-          COALESCE(
-            NULLIF(ct.intentCategory, ''),
-            CASE 
-              WHEN ct.botOutput LIKE '%error%' OR ct.botOutput LIKE '%issue%' THEN 'System Error'
-              WHEN ct.botOutput LIKE '%not understand%' OR ct.botOutput LIKE '%unclear%' THEN 'Understanding Error'
-              WHEN ct.botOutput LIKE '%not found%' OR ct.botOutput LIKE '%cannot find%' THEN 'Data Error'
-              WHEN ct.botOutput LIKE '%timeout%' OR ct.botOutput LIKE '%slow%' THEN 'Performance Error'
-              ELSE 'General Error'
-            END
-          ) AS errorType
-        FROM TeneoMemory.vw_ConversationTurnsEnriched ct
-        WHERE ct.isError IN ('True', '1', 1)
-      )
-      SELECT DISTINCT callId
-      FROM ErrorTurns
-      WHERE errorType = @errorType
-    `;
-
-    const errorCalls = await query(errorCallsQuery, { errorType });
-    
-    if (errorCalls.length === 0) {
-      // Return empty result if no calls found
-      const response: DrilldownApiResponse = {
-        success: true,
-        data: {
-          errorType: errorType,
-          errorCategory: errorInfo.category,
-          errorDescription: errorInfo.description,
-          errorCount: 0,
-          calls: [],
-        },
-        metadata: {
-          totalCount: 0,
-          cached: false,
-          timestamp: new Date().toISOString(),
-        },
-      };
-      return NextResponse.json(response);
-    }
-
-    // Get call details for these callIds
-    const callIds = errorCalls.map((row: any) => row.callId);
-    const placeholders = callIds.map((_, i) => `@callId${i}`).join(',');
-    
-    const callDetailsParams: Record<string, any> = {};
-    callIds.forEach((id: string, i: number) => {
-      callDetailsParams[`callId${i}`] = id;
-    });
-
+    // Get calls with this error severity level - match the grouping from overview
     const callsQuery = `
       SELECT 
         c.call_id AS callId,
@@ -107,11 +56,20 @@ export async function GET(request: Request) {
         CASE WHEN c.successful_resolution IN ('True', '1') THEN 1 ELSE 0 END AS successfulResolution,
         CAST(c.error_count AS INT) AS errorCount
       FROM [TeneoMemory].[Sessions] c
-      WHERE c.call_id IN (${placeholders})
+      WHERE c.has_errors IN ('True', '1')
+        AND c.error_count IS NOT NULL
+        AND c.error_count != ''
+        AND CAST(c.error_count AS INT) > 0
+        AND CASE 
+          WHEN CAST(c.error_count AS INT) >= 5 THEN 'High Frequency Errors'
+          WHEN CAST(c.error_count AS INT) >= 3 THEN 'Multiple Errors'
+          WHEN CAST(c.error_count AS INT) = 2 THEN 'Moderate Errors'
+          ELSE 'Single Error'
+        END = @errorType
       ORDER BY c.call_start_timestamp DESC
     `;
 
-    const callsResult = await query(callsQuery, callDetailsParams);
+    const callsResult = await query(callsQuery, { errorType });
 
     // Transform to DrilldownCallData format
     const calls: DrilldownCallData[] = callsResult.map((row: any) => ({

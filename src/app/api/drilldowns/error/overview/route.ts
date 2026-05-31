@@ -16,118 +16,100 @@ export async function GET(request: Request) {
     const endDate = searchParams.get('endDate');
     const channel = searchParams.get('channel');
 
-    // Query using vw_ConversationTurnsEnriched to extract actual error patterns
-    // This follows the Transfer Rate pattern with proper categorization
+    // Simplified query following Transfer Rate pattern
+    // Categorize errors by severity based on error_count
     let sqlQuery = `
-      WITH ErrorTurns AS (
-        SELECT 
-          ct.callId,
-          ct.callDate,
-          ct.channel,
-          ct.intentCategory,
-          ct.intentName,
-          ct.botOutput,
-          -- Categorize error types based on intent or response patterns
-          COALESCE(
-            NULLIF(ct.intentCategory, ''),
-            CASE 
-              WHEN ct.botOutput LIKE '%error%' OR ct.botOutput LIKE '%issue%' THEN 'System Error'
-              WHEN ct.botOutput LIKE '%not understand%' OR ct.botOutput LIKE '%unclear%' THEN 'Understanding Error'
-              WHEN ct.botOutput LIKE '%not found%' OR ct.botOutput LIKE '%cannot find%' THEN 'Data Error'
-              WHEN ct.botOutput LIKE '%timeout%' OR ct.botOutput LIKE '%slow%' THEN 'Performance Error'
-              ELSE 'General Error'
-            END
-          ) AS errorType
-        FROM TeneoMemory.vw_ConversationTurnsEnriched ct
-        WHERE ct.isError IN ('True', '1', 1)
+      SELECT 
+        CASE 
+          WHEN CAST(c.error_count AS INT) >= 5 THEN 'High Frequency Errors'
+          WHEN CAST(c.error_count AS INT) >= 3 THEN 'Multiple Errors'
+          WHEN CAST(c.error_count AS INT) = 2 THEN 'Moderate Errors'
+          ELSE 'Single Error'
+        END AS errorType,
+        CASE 
+          WHEN CAST(c.error_count AS INT) >= 5 THEN 'Critical'
+          WHEN CAST(c.error_count AS INT) >= 3 THEN 'High'
+          WHEN CAST(c.error_count AS INT) = 2 THEN 'Medium'
+          ELSE 'Low'
+        END AS errorCategory,
+        COUNT(DISTINCT c.call_id) AS callsAffected,
+        SUM(CAST(c.error_count AS INT)) AS errorCount,
+        CAST(SUM(CASE WHEN c.successful_resolution IN ('True', '1') THEN 1 ELSE 0 END) * 100.0 / 
+          NULLIF(COUNT(DISTINCT c.call_id), 0) AS DECIMAL(5,2)) AS recoveryRate,
+        AVG(
+          CASE 
+            WHEN c.avg_satisfaction_score = 'Satisfied' THEN 0.8
+            WHEN c.avg_satisfaction_score = 'Happy' THEN 0.9
+            WHEN c.avg_satisfaction_score = 'Neutral' THEN 0.5
+            WHEN c.avg_satisfaction_score = 'Stressed' THEN 0.3
+            WHEN c.avg_satisfaction_score = 'Frustrated' THEN 0.2
+            ELSE 0.5
+          END
+        ) AS avgSentiment,
+        AVG(CAST(c.error_count AS FLOAT)) AS avgErrorsPerCall
+      FROM [TeneoMemory].[Sessions] c
+      WHERE c.has_errors IN ('True', '1')
+        AND c.error_count IS NOT NULL
+        AND c.error_count != ''
+        AND CAST(c.error_count AS INT) > 0
     `;
 
     const params: Record<string, any> = {};
 
     if (startDate) {
-      sqlQuery += ` AND TRY_CAST(ct.callDate AS DATE) >= @startDate`;
+      sqlQuery += ` AND TRY_CAST(c.call_start_timestamp AS DATE) >= @startDate`;
       params.startDate = startDate;
     }
     if (endDate) {
-      sqlQuery += ` AND TRY_CAST(ct.callDate AS DATE) <= @endDate`;
+      sqlQuery += ` AND TRY_CAST(c.call_start_timestamp AS DATE) <= @endDate`;
       params.endDate = endDate;
     }
     if (channel) {
-      sqlQuery += ` AND ct.channel = @channel`;
+      sqlQuery += ` AND c.channel = @channel`;
       params.channel = channel;
     }
 
     sqlQuery += `
-      ),
-      ErrorTypeSummary AS (
-        SELECT 
-          et.errorType,
-          CASE 
-            WHEN et.errorType = 'System Error' THEN 'System'
-            WHEN et.errorType = 'Understanding Error' THEN 'Intent'
-            WHEN et.errorType = 'Data Error' THEN 'Data'
-            WHEN et.errorType = 'Performance Error' THEN 'Performance'
-            WHEN et.errorType LIKE '%Fallback%' OR et.errorType LIKE '%Unknown%' THEN 'Understanding'
-            ELSE 'Other'
-          END AS errorCategory,
-          COUNT(*) AS errorCount,
-          COUNT(DISTINCT et.callId) AS callsAffected
-        FROM ErrorTurns et
-        GROUP BY et.errorType
-      )
-      SELECT 
-        ets.errorType,
-        ets.errorCategory,
+      GROUP BY 
         CASE 
-          WHEN ets.errorCategory = 'System' THEN 'Technical or system-level failures'
-          WHEN ets.errorCategory = 'Intent' THEN 'Bot failed to understand user input'
-          WHEN ets.errorCategory = 'Data' THEN 'Missing or unavailable data'
-          WHEN ets.errorCategory = 'Performance' THEN 'Timeout or performance issues'
-          WHEN ets.errorCategory = 'Understanding' THEN 'Intent recognition failures'
-          ELSE 'Other technical errors'
-        END AS errorDescription,
-        ets.errorCount,
-        ets.callsAffected,
-        CAST(
-          (SELECT SUM(CASE WHEN s.successful_resolution IN ('True', '1') THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0)
-           FROM [TeneoMemory].[Sessions] s
-           WHERE s.call_id IN (SELECT DISTINCT callId FROM ErrorTurns WHERE errorType = ets.errorType)
-          ) AS DECIMAL(5,2)
-        ) AS recoveryRate,
-        (
-          SELECT AVG(
-            CASE 
-              WHEN s.avg_satisfaction_score = 'Satisfied' THEN 0.8
-              WHEN s.avg_satisfaction_score = 'Happy' THEN 0.9
-              WHEN s.avg_satisfaction_score = 'Neutral' THEN 0.5
-              WHEN s.avg_satisfaction_score = 'Stressed' THEN 0.3
-              WHEN s.avg_satisfaction_score = 'Frustrated' THEN 0.2
-              ELSE 0.5
-            END
-          )
-          FROM [TeneoMemory].[Sessions] s
-          WHERE s.call_id IN (SELECT DISTINCT callId FROM ErrorTurns WHERE errorType = ets.errorType)
-        ) AS avgSentiment,
-        CAST(ets.errorCount * 1.0 / NULLIF(ets.callsAffected, 0) AS DECIMAL(5,2)) AS avgErrorsPerCall
-      FROM ErrorTypeSummary ets
-      ORDER BY ets.errorCount DESC
+          WHEN CAST(c.error_count AS INT) >= 5 THEN 'High Frequency Errors'
+          WHEN CAST(c.error_count AS INT) >= 3 THEN 'Multiple Errors'
+          WHEN CAST(c.error_count AS INT) = 2 THEN 'Moderate Errors'
+          ELSE 'Single Error'
+        END,
+        CASE 
+          WHEN CAST(c.error_count AS INT) >= 5 THEN 'Critical'
+          WHEN CAST(c.error_count AS INT) >= 3 THEN 'High'
+          WHEN CAST(c.error_count AS INT) = 2 THEN 'Medium'
+          ELSE 'Low'
+        END
+      ORDER BY errorCount DESC
     `;
 
     const errorTypes = await query(sqlQuery, params);
 
-    // Calculate percentage of each error type
-    const totalErrors = errorTypes.reduce((sum: number, e: any) => sum + parseInt(e.errorCount), 0);
-    const errorTypesWithPercentage = errorTypes.map((e: any) => ({
-      errorType: e.errorType,
-      errorCategory: e.errorCategory,
-      errorDescription: e.errorDescription,
-      errorCount: parseInt(e.errorCount),
-      percentage: totalErrors > 0 ? (parseInt(e.errorCount) / totalErrors) * 100 : 0,
-      callsAffected: parseInt(e.callsAffected),
-      recoveryRate: parseFloat(e.recoveryRate || 0),
-      avgSentiment: parseFloat(e.avgSentiment || 0.5),
-      avgErrorsPerCall: parseFloat(e.avgErrorsPerCall || 0),
-    }));
+    // Calculate percentage and add descriptions
+    const totalErrors = errorTypes.reduce((sum: number, e: any) => sum + parseInt(e.errorCount || 0), 0);
+    const errorTypesWithPercentage = errorTypes.map((e: any) => {
+      // Generate description based on severity level
+      let errorDescription = 'Other technical errors';
+      if (e.errorType === 'High Frequency Errors') errorDescription = 'Calls with 5 or more errors requiring immediate attention';
+      else if (e.errorType === 'Multiple Errors') errorDescription = 'Calls with 3-4 errors showing recurring issues';
+      else if (e.errorType === 'Moderate Errors') errorDescription = 'Calls with 2 errors indicating minor problems';
+      else if (e.errorType === 'Single Error') errorDescription = 'Calls with a single error occurrence';
+      
+      return {
+        errorType: e.errorType,
+        errorCategory: e.errorCategory,
+        errorDescription: errorDescription,
+        errorCount: parseInt(e.errorCount || 0),
+        percentage: totalErrors > 0 ? (parseInt(e.errorCount || 0) / totalErrors) * 100 : 0,
+        callsAffected: parseInt(e.callsAffected || 0),
+        recoveryRate: parseFloat(e.recoveryRate || 0),
+        avgSentiment: parseFloat(e.avgSentiment || 0.5),
+        avgErrorsPerCall: parseFloat(e.avgErrorsPerCall || 0),
+      };
+    });
 
     // Get totals
     let totalsQuery = `
