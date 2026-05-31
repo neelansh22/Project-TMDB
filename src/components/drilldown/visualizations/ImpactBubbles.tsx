@@ -98,6 +98,8 @@ export default function ImpactBubbles({
             type="number"
             dataKey="x"
             name="Position"
+            domain={[0, 100]}
+            hide
             tick={false}
             axisLine={false}
             domain={[0, 100]}
@@ -144,8 +146,8 @@ export default function ImpactBubbles({
                 className="w-4 h-4 rounded-full"
                 style={{ backgroundColor: getColor(item, index) }}
               />
-              <span className="text-gray-700 font-medium">{item.name}</span>
-              <span className="text-gray-500">({item.z})</span>
+              <span className="text-gray-300 font-medium">{item.name}</span>
+              <span className="text-gray-400">({item.z})</span>
             </button>
           ))}
         </div>

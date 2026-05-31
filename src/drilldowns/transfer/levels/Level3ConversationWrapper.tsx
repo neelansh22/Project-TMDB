@@ -23,32 +23,16 @@ export default function Level3ConversationWrapper({
   onDrill,
   isLoading,
 }: DrilldownLevelProps<Level3Data>) {
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="p-6">
-        <div className="bg-red-900/20 border border-red-800 rounded-lg p-4 text-red-400">
-          No conversation data available
-        </div>
-      </div>
-    );
-  }
-
-  // Extract callId from context (passed from Level 2)
+  // Extract callId from context (filters) - this is passed from Level 2
   const callId = context?.callId || data?.callId;
+
+  console.log('Level3ConversationWrapper - context:', context, 'data:', data, 'callId:', callId);
 
   if (!callId) {
     return (
       <div className="p-6">
         <div className="bg-red-900/20 border border-red-800 rounded-lg p-4 text-red-400">
-          Call ID not found. Please try again.
+          Call ID not found. Please try drilling down from a call.
         </div>
         <pre className="mt-4 text-xs bg-gray-800 p-4 rounded text-gray-300">
           Context: {JSON.stringify(context, null, 2)}
@@ -57,7 +41,8 @@ export default function Level3ConversationWrapper({
     );
   }
 
-  // Use ConversationViewer but adapt it to not need onClose
+  // ConversationViewer fetches its own data, so we just pass the callId
+  // No need to wait for data from DrilldownModal
   return (
     <div className="h-full">
       <ConversationViewer

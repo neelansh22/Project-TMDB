@@ -60,11 +60,11 @@ export default function TransferBarChart({
             angle={-45}
             textAnchor="end"
             height={100}
-            tick={{ fill: '#6B7280', fontSize: 12 }}
+            tick={{ fill: '#9CA3AF', fontSize: 12 }}
           />
           <YAxis
-            tick={{ fill: '#6B7280', fontSize: 12 }}
-            label={{ value: 'Transfer Count', angle: -90, position: 'insideLeft', style: { fill: '#6B7280' } }}
+            tick={{ fill: '#9CA3AF', fontSize: 12 }}
+            label={{ value: 'Transfer Count', angle: -90, position: 'insideLeft', style: { fill: '#9CA3AF' } }}
           />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(156, 163, 175, 0.1)' }} />
           <Bar
@@ -89,15 +89,15 @@ export default function TransferBarChart({
         <div className="mt-4 flex justify-center gap-6 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded" style={{ backgroundColor: '#10b981' }} />
-            <span className="text-gray-700">High Resolution (≥70%)</span>
+            <span className="text-gray-300">High Resolution (≥70%)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded" style={{ backgroundColor: '#f59e0b' }} />
-            <span className="text-gray-700">Medium Resolution (40-70%)</span>
+            <span className="text-gray-300">Medium Resolution (40-70%)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded" style={{ backgroundColor: '#ef4444' }} />
-            <span className="text-gray-700">Low Resolution (&lt;40%)</span>
+            <span className="text-gray-300">Low Resolution (&lt;40%)</span>
           </div>
         </div>
       )}
