@@ -7,6 +7,7 @@
 
 import { DrilldownConfig, DrilldownRegistry } from '@/types/drilldown';
 import { transferDrilldownConfigWithComponents } from './transfer';
+import { errorDrilldownConfigWithComponents } from './error';
 
 /**
  * Registry of all drilldowns
@@ -19,10 +20,15 @@ const drilldownRegistry: DrilldownRegistry = {
     enabled: true,
   },
   
+  // Error drilldown
+  'error-rate': {
+    config: errorDrilldownConfigWithComponents,
+    enabled: true,
+  },
+  
   // Future drilldowns:
   // 'resolution-rate': { config: resolutionDrilldownConfig, enabled: false },
   // 'drop-rate': { config: dropRateDrilldownConfig, enabled: false },
-  // 'error-rate': { config: errorDrilldownConfig, enabled: false },
 };
 
 /**

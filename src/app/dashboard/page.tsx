@@ -167,6 +167,8 @@ export default function DashboardPage() {
                 subtitle={`${metrics.totalErrors.toLocaleString()} total errors`}
                 icon="alert"
                 color="red"
+                drilldownId="error-rate"
+                onClick={() => setActiveDrilldown('error-rate')}
               />
             </div>
 
