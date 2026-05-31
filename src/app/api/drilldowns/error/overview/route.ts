@@ -16,92 +16,101 @@ export async function GET(request: Request) {
     const endDate = searchParams.get('endDate');
     const channel = searchParams.get('channel');
 
-    // Query to get error types with aggregated metrics
-    // We'll categorize errors by extracting patterns from utterance text
+    // Query using vw_ConversationTurnsEnriched to extract actual error patterns
+    // This follows the Transfer Rate pattern with proper categorization
     let sqlQuery = `
       WITH ErrorTurns AS (
         SELECT 
-          ct.call_id,
-          ct.utterance_text,
-          ct.turn_id,
-          c.call_start_timestamp,
-          c.channel,
-          c.successful_resolution,
-          c.avg_satisfaction_score,
-          -- Categorize error types based on utterance patterns
-          CASE 
-            WHEN ct.utterance_text LIKE '%system%error%' OR ct.utterance_text LIKE '%technical%issue%' THEN 'System Error'
-            WHEN ct.utterance_text LIKE '%timeout%' OR ct.utterance_text LIKE '%timed out%' THEN 'Timeout Error'
-            WHEN ct.utterance_text LIKE '%not found%' OR ct.utterance_text LIKE '%cannot find%' THEN 'Not Found Error'
-            WHEN ct.utterance_text LIKE '%invalid%' OR ct.utterance_text LIKE '%incorrect%' THEN 'Validation Error'
-            WHEN ct.utterance_text LIKE '%connection%' OR ct.utterance_text LIKE '%network%' THEN 'Connection Error'
-            WHEN ct.utterance_text LIKE '%permission%' OR ct.utterance_text LIKE '%access denied%' THEN 'Permission Error'
-            WHEN ct.utterance_text LIKE '%API%' OR ct.utterance_text LIKE '%service%unavailable%' THEN 'API Error'
-            ELSE 'General Error'
-          END AS errorType,
-          CASE 
-            WHEN ct.utterance_text LIKE '%system%error%' OR ct.utterance_text LIKE '%technical%issue%' THEN 'System'
-            WHEN ct.utterance_text LIKE '%timeout%' OR ct.utterance_text LIKE '%timed out%' THEN 'Performance'
-            WHEN ct.utterance_text LIKE '%not found%' OR ct.utterance_text LIKE '%cannot find%' THEN 'Data'
-            WHEN ct.utterance_text LIKE '%invalid%' OR ct.utterance_text LIKE '%incorrect%' THEN 'Input'
-            WHEN ct.utterance_text LIKE '%connection%' OR ct.utterance_text LIKE '%network%' THEN 'Network'
-            WHEN ct.utterance_text LIKE '%permission%' OR ct.utterance_text LIKE '%access denied%' THEN 'Security'
-            WHEN ct.utterance_text LIKE '%API%' OR ct.utterance_text LIKE '%service%unavailable%' THEN 'Integration'
-            ELSE 'Other'
-          END AS errorCategory
-        FROM [TeneoMemory].[CallTurns] ct
-        INNER JOIN [TeneoMemory].[Sessions] c ON ct.call_id = c.call_id
-        WHERE ct.is_error IN ('True', '1')
+          ct.callId,
+          ct.callDate,
+          ct.channel,
+          ct.intentCategory,
+          ct.intentName,
+          ct.botOutput,
+          -- Categorize error types based on intent or response patterns
+          COALESCE(
+            NULLIF(ct.intentCategory, ''),
+            CASE 
+              WHEN ct.botOutput LIKE '%error%' OR ct.botOutput LIKE '%issue%' THEN 'System Error'
+              WHEN ct.botOutput LIKE '%not understand%' OR ct.botOutput LIKE '%unclear%' THEN 'Understanding Error'
+              WHEN ct.botOutput LIKE '%not found%' OR ct.botOutput LIKE '%cannot find%' THEN 'Data Error'
+              WHEN ct.botOutput LIKE '%timeout%' OR ct.botOutput LIKE '%slow%' THEN 'Performance Error'
+              ELSE 'General Error'
+            END
+          ) AS errorType
+        FROM TeneoMemory.vw_ConversationTurnsEnriched ct
+        WHERE ct.isError IN ('True', '1', 1)
     `;
 
     const params: Record<string, any> = {};
 
     if (startDate) {
-      sqlQuery += ` AND TRY_CAST(c.call_start_timestamp AS DATE) >= @startDate`;
+      sqlQuery += ` AND TRY_CAST(ct.callDate AS DATE) >= @startDate`;
       params.startDate = startDate;
     }
     if (endDate) {
-      sqlQuery += ` AND TRY_CAST(c.call_start_timestamp AS DATE) <= @endDate`;
+      sqlQuery += ` AND TRY_CAST(ct.callDate AS DATE) <= @endDate`;
       params.endDate = endDate;
     }
     if (channel) {
-      sqlQuery += ` AND c.channel = @channel`;
+      sqlQuery += ` AND ct.channel = @channel`;
       params.channel = channel;
     }
 
     sqlQuery += `
+      ),
+      ErrorTypeSummary AS (
+        SELECT 
+          et.errorType,
+          CASE 
+            WHEN et.errorType = 'System Error' THEN 'System'
+            WHEN et.errorType = 'Understanding Error' THEN 'Intent'
+            WHEN et.errorType = 'Data Error' THEN 'Data'
+            WHEN et.errorType = 'Performance Error' THEN 'Performance'
+            WHEN et.errorType LIKE '%Fallback%' OR et.errorType LIKE '%Unknown%' THEN 'Understanding'
+            ELSE 'Other'
+          END AS errorCategory,
+          COUNT(*) AS errorCount,
+          COUNT(DISTINCT et.callId) AS callsAffected
+        FROM ErrorTurns et
+        GROUP BY et.errorType
       )
       SELECT 
-        errorType,
-        errorCategory,
-        CASE errorType
-          WHEN 'System Error' THEN 'Technical or system-level failures'
-          WHEN 'Timeout Error' THEN 'Request timeouts or processing delays'
-          WHEN 'Not Found Error' THEN 'Missing or unavailable data'
-          WHEN 'Validation Error' THEN 'Invalid input or incorrect data format'
-          WHEN 'Connection Error' THEN 'Network or connectivity issues'
-          WHEN 'Permission Error' THEN 'Access denied or authorization failures'
-          WHEN 'API Error' THEN 'External API or service failures'
+        ets.errorType,
+        ets.errorCategory,
+        CASE 
+          WHEN ets.errorCategory = 'System' THEN 'Technical or system-level failures'
+          WHEN ets.errorCategory = 'Intent' THEN 'Bot failed to understand user input'
+          WHEN ets.errorCategory = 'Data' THEN 'Missing or unavailable data'
+          WHEN ets.errorCategory = 'Performance' THEN 'Timeout or performance issues'
+          WHEN ets.errorCategory = 'Understanding' THEN 'Intent recognition failures'
           ELSE 'Other technical errors'
         END AS errorDescription,
-        COUNT(*) AS errorCount,
-        COUNT(DISTINCT call_id) AS callsAffected,
-        CAST(SUM(CASE WHEN successful_resolution IN ('True', '1') THEN 1 ELSE 0 END) * 100.0 / 
-          NULLIF(COUNT(DISTINCT call_id), 0) AS DECIMAL(5,2)) AS recoveryRate,
-        AVG(
-          CASE 
-            WHEN avg_satisfaction_score = 'Satisfied' THEN 0.8
-            WHEN avg_satisfaction_score = 'Happy' THEN 0.9
-            WHEN avg_satisfaction_score = 'Neutral' THEN 0.5
-            WHEN avg_satisfaction_score = 'Stressed' THEN 0.3
-            WHEN avg_satisfaction_score = 'Frustrated' THEN 0.2
-            ELSE 0.5
-          END
+        ets.errorCount,
+        ets.callsAffected,
+        CAST(
+          (SELECT SUM(CASE WHEN s.successful_resolution IN ('True', '1') THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0)
+           FROM [TeneoMemory].[Sessions] s
+           WHERE s.call_id IN (SELECT DISTINCT callId FROM ErrorTurns WHERE errorType = ets.errorType)
+          ) AS DECIMAL(5,2)
+        ) AS recoveryRate,
+        (
+          SELECT AVG(
+            CASE 
+              WHEN s.avg_satisfaction_score = 'Satisfied' THEN 0.8
+              WHEN s.avg_satisfaction_score = 'Happy' THEN 0.9
+              WHEN s.avg_satisfaction_score = 'Neutral' THEN 0.5
+              WHEN s.avg_satisfaction_score = 'Stressed' THEN 0.3
+              WHEN s.avg_satisfaction_score = 'Frustrated' THEN 0.2
+              ELSE 0.5
+            END
+          )
+          FROM [TeneoMemory].[Sessions] s
+          WHERE s.call_id IN (SELECT DISTINCT callId FROM ErrorTurns WHERE errorType = ets.errorType)
         ) AS avgSentiment,
-        CAST(COUNT(*) * 1.0 / NULLIF(COUNT(DISTINCT call_id), 0) AS DECIMAL(5,2)) AS avgErrorsPerCall
-      FROM ErrorTurns
-      GROUP BY errorType, errorCategory
-      ORDER BY errorCount DESC
+        CAST(ets.errorCount * 1.0 / NULLIF(ets.callsAffected, 0) AS DECIMAL(5,2)) AS avgErrorsPerCall
+      FROM ErrorTypeSummary ets
+      ORDER BY ets.errorCount DESC
     `;
 
     const errorTypes = await query(sqlQuery, params);
