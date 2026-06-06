@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
     // Check if this is a tool error or regular error
     if (isToolError) {
-      // Tool error - query ToolErrors table (with error handling)
+      // Tool error - query ToolError table (with error handling)
       try {
         const toolErrorQuery = `
           SELECT 
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
             STRING_AGG(te.error_type, ', ') WITHIN GROUP (ORDER BY te.error_timestamp) AS errorTypes,
             STRING_AGG(te.impact_level, ', ') WITHIN GROUP (ORDER BY te.error_timestamp) AS impactLevels,
             SUM(CASE WHEN te.resolved IN ('True', '1') THEN 1 ELSE 0 END) AS resolvedToolErrors
-          FROM [TeneoMemory].[ToolErrors] te
+          FROM [TeneoMemory].[ToolError] te
           INNER JOIN [TeneoMemory].[Sessions] c ON te.call_id = c.call_id
           WHERE te.tool_name = @errorType
           GROUP BY 
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
 
         // Get tool error category for description
         const categoryQuery = await query(
-          `SELECT TOP 1 impact_level, error_type FROM [TeneoMemory].[ToolErrors] WHERE tool_name = @errorType`,
+          `SELECT TOP 1 impact_level, error_type FROM [TeneoMemory].[ToolError] WHERE tool_name = @errorType`,
           { errorType }
         );
 
@@ -105,11 +105,11 @@ export async function GET(request: Request) {
           },
         }));
       } catch (toolErrorQueryError) {
-        console.error('ToolErrors table query failed:', toolErrorQueryError);
+        console.error('ToolError table query failed:', toolErrorQueryError);
         // Return empty result set with error info
         errorInfo = {
           category: 'Unknown',
-          description: `${errorType} integration failures (ToolErrors table not available)`,
+          description: `${errorType} integration failures (ToolError table not available)`,
         };
         calls = [];
       }

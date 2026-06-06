@@ -89,7 +89,7 @@ export async function GET(request: Request) {
     const errorTypes = await query(sqlQuery, params);
 
     // Query Tool Errors (integration failures)
-    // Wrap in try-catch in case ToolErrors table doesn't exist yet
+    // Wrap in try-catch in case ToolError table doesn't exist yet
     let toolErrors: any[] = [];
     try {
       let toolErrorQuery = `
@@ -112,7 +112,7 @@ export async function GET(request: Request) {
             END
           ) AS avgSentiment,
           AVG(CAST(te.retry_count AS FLOAT)) AS avgRetryCount
-        FROM [TeneoMemory].[ToolErrors] te
+        FROM [TeneoMemory].[ToolError] te
         LEFT JOIN [TeneoMemory].[Sessions] c ON te.call_id = c.call_id
         WHERE 1=1
       `;
@@ -134,7 +134,7 @@ export async function GET(request: Request) {
 
       toolErrors = await query(toolErrorQuery, params);
     } catch (toolErrorQueryError) {
-      console.warn('ToolErrors table not found or query failed, skipping tool errors:', toolErrorQueryError);
+      console.warn('ToolError table not found or query failed, skipping tool errors:', toolErrorQueryError);
       toolErrors = [];
     }
 
@@ -228,7 +228,7 @@ export async function GET(request: Request) {
         SELECT 
           COUNT(DISTINCT call_id) AS callsWithToolErrors,
           COUNT(*) AS totalToolErrors
-        FROM [TeneoMemory].[ToolErrors]
+        FROM [TeneoMemory].[ToolError]
         WHERE 1=1
       `;
 
@@ -241,7 +241,7 @@ export async function GET(request: Request) {
 
       toolErrorTotals = await query(toolErrorTotalsQuery, params);
     } catch (toolErrorTotalsQueryError) {
-      console.warn('ToolErrors table not found for totals, using zero counts:', toolErrorTotalsQueryError);
+      console.warn('ToolError table not found for totals, using zero counts:', toolErrorTotalsQueryError);
       toolErrorTotals = [{ callsWithToolErrors: 0, totalToolErrors: 0 }];
     }
 
