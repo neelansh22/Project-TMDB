@@ -7,7 +7,7 @@
 'use client';
 
 import { DrilldownLevelProps, DrilldownCallData } from '@/types/drilldown';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Wrench } from 'lucide-react';
 
 interface Level2Data {
   errorType: string;
@@ -15,6 +15,7 @@ interface Level2Data {
   errorDescription: string;
   errorCount: number;
   calls: DrilldownCallData[];
+  isToolError?: boolean;
 }
 
 export default function ErrorCallsList({
@@ -39,11 +40,20 @@ export default function ErrorCallsList({
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <AlertTriangle className="w-5 h-5 text-red-400" />
+              {data.isToolError ? (
+                <Wrench className="w-5 h-5 text-blue-400" />
+              ) : (
+                <AlertTriangle className="w-5 h-5 text-red-400" />
+              )}
               <h3 className="text-lg font-semibold text-white">{data.errorType}</h3>
               <span className="text-xs px-2 py-0.5 bg-gray-700 border border-gray-600 text-gray-300 rounded font-medium">
                 {data.errorCategory}
               </span>
+              {data.isToolError && (
+                <span className="text-xs px-2 py-0.5 bg-blue-900/50 border border-blue-700 text-blue-300 rounded font-medium">
+                  Integration Failure
+                </span>
+              )}
             </div>
             <p className="text-sm text-gray-300">{data.errorDescription}</p>
           </div>
@@ -132,7 +142,17 @@ export default function ErrorCallsList({
                     <td className="py-3 px-4">
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-900 text-red-300">
                         {call.metadata?.errorCount || 0}
+                        {call.metadata?.isToolError && call.metadata?.resolvedToolErrors !== undefined && (
+                          <span className="ml-1 text-green-300">
+                            ({call.metadata.resolvedToolErrors} resolved)
+                          </span>
+                        )}
                       </span>
+                      {call.metadata?.isToolError && call.metadata?.errorTypes && (
+                        <div className="text-xs text-gray-400 mt-1">
+                          {call.metadata.errorTypes}
+                        </div>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-gray-300 text-xs">
                       {call.initialSentiment || 'Unknown'} → {call.finalSentiment || 'Unknown'}

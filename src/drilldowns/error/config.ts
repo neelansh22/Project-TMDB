@@ -127,7 +127,15 @@ export const errorDrilldownConfig: DrilldownConfig = {
   
   api: {
     level1: '/api/drilldowns/error/overview',
-    level2: (filters) => `/api/drilldowns/error/breakdown?errorType=${encodeURIComponent(filters.errorType)}`,
+    level2: (filters) => {
+      const params = new URLSearchParams({
+        errorType: filters.errorType,
+      });
+      if (filters.isToolError !== undefined) {
+        params.append('isToolError', String(filters.isToolError));
+      }
+      return `/api/drilldowns/error/breakdown?${params.toString()}`;
+    },
     level3: (filters) => `/api/conversations/details?callId=${encodeURIComponent(filters.callId)}`,
   },
   

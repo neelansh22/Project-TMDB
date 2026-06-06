@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { DrilldownLevelProps } from '@/types/drilldown';
 import ImpactBubbles from '@/components/drilldown/visualizations/ImpactBubbles';
 import TransferBarChart from '@/components/drilldown/visualizations/TransferBarChart';
-import { ArrowRight, TrendingUp, TrendingDown, Minus, BarChart3, Sparkles, AlertTriangle } from 'lucide-react';
+import { ArrowRight, TrendingUp, TrendingDown, Minus, BarChart3, Sparkles, AlertTriangle, Wrench } from 'lucide-react';
 
 interface ErrorType {
   errorType: string;
@@ -22,6 +22,8 @@ interface ErrorType {
   recoveryRate: number;
   avgSentiment: number;
   avgErrorsPerCall: number;
+  errorSubType?: string;
+  isToolError?: boolean;
 }
 
 interface Level1Data {
@@ -30,6 +32,10 @@ interface Level1Data {
   totalErrors: number;
   errorRate: number;
   errorTypes: ErrorType[];
+  toolErrorStats?: {
+    callsWithToolErrors: number;
+    totalToolErrors: number;
+  };
 }
 
 export default function ErrorOverview({
@@ -79,7 +85,7 @@ export default function ErrorOverview({
   return (
     <div className="p-6 space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-red-900/40 to-red-800/40 rounded-lg p-4 border border-red-700/30">
           <div className="text-sm text-red-300 font-medium">Total Errors</div>
           <div className="text-3xl font-bold text-red-100 mt-1">
@@ -97,6 +103,19 @@ export default function ErrorOverview({
           </div>
           <div className="text-sm text-orange-400 mt-1">
             Unique patterns
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/40 rounded-lg p-4 border border-blue-700/30">
+          <div className="text-sm text-blue-300 font-medium flex items-center gap-2">
+            <Wrench className="w-4 h-4" />
+            Tool Errors
+          </div>
+          <div className="text-3xl font-bold text-blue-100 mt-1">
+            {data.toolErrorStats?.totalToolErrors || 0}
+          </div>
+          <div className="text-sm text-blue-400 mt-1">
+            {data.toolErrorStats?.callsWithToolErrors || 0} calls affected
           </div>
         </div>
 
@@ -155,7 +174,10 @@ export default function ErrorOverview({
               onBarClick={(item) => {
                 const error = data.errorTypes.find(e => e.errorType === item.name);
                 if (error) {
-                  onDrill({ errorType: error.errorType });
+                  onDrill({ 
+                    errorType: error.errorType,
+                    isToolError: error.isToolError 
+                  });
                 }
               }}
               showLabels
@@ -166,7 +188,10 @@ export default function ErrorOverview({
               onBubbleClick={(item) => {
                 const error = data.errorTypes.find(e => e.errorType === item.name);
                 if (error) {
-                  onDrill({ errorType: error.errorType });
+                  onDrill({ 
+                    errorType: error.errorType,
+                    isToolError: error.isToolError 
+                  });
                 }
               }}
               colorScheme="impact"
@@ -185,18 +210,30 @@ export default function ErrorOverview({
           {data.errorTypes.map((error, index) => (
             <button
               key={index}
-              onClick={() => onDrill({ errorType: error.errorType })}
+              onClick={() => onDrill({ 
+                errorType: error.errorType,
+                isToolError: error.isToolError 
+              })}
               className="w-full bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-red-500 hover:shadow-md transition-all text-left group"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0 space-y-2">
                   {/* Error Type and Category */}
                   <div className="flex items-center gap-3">
-                    <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                    {error.isToolError ? (
+                      <Wrench className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                    ) : (
+                      <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                    )}
                     <h4 className="font-semibold text-white">{error.errorType}</h4>
                     <span className="text-xs px-2 py-0.5 bg-gray-700 text-gray-300 rounded font-medium">
                       {error.errorCategory}
                     </span>
+                    {error.isToolError && error.errorSubType && (
+                      <span className="text-xs px-2 py-0.5 bg-blue-900/50 border border-blue-700 text-blue-300 rounded font-medium">
+                        {error.errorSubType}
+                      </span>
+                    )}
                   </div>
 
                   {/* Description */}

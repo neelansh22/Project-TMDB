@@ -88,26 +88,105 @@ export async function GET(request: Request) {
 
     const errorTypes = await query(sqlQuery, params);
 
+    // Query Tool Errors (integration failures)
+    let toolErrorQuery = `
+      SELECT 
+        te.tool_name AS errorType,
+        te.impact_level AS errorCategory,
+        te.error_type AS errorSubType,
+        COUNT(DISTINCT te.call_id) AS callsAffected,
+        COUNT(*) AS errorCount,
+        CAST(SUM(CASE WHEN te.resolved IN ('True', '1') THEN 1 ELSE 0 END) * 100.0 / 
+          NULLIF(COUNT(*), 0) AS DECIMAL(5,2)) AS recoveryRate,
+        AVG(
+          CASE 
+            WHEN c.avg_satisfaction_score = 'Satisfied' THEN 0.8
+            WHEN c.avg_satisfaction_score = 'Happy' THEN 0.9
+            WHEN c.avg_satisfaction_score = 'Neutral' THEN 0.5
+            WHEN c.avg_satisfaction_score = 'Stressed' THEN 0.3
+            WHEN c.avg_satisfaction_score = 'Frustrated' THEN 0.2
+            ELSE 0.5
+          END
+        ) AS avgSentiment,
+        AVG(CAST(te.retry_count AS FLOAT)) AS avgRetryCount
+      FROM [TeneoMemory].[ToolErrors] te
+      LEFT JOIN [TeneoMemory].[Sessions] c ON te.call_id = c.call_id
+      WHERE 1=1
+    `;
+
+    if (startDate) {
+      toolErrorQuery += ` AND TRY_CAST(te.error_timestamp AS DATE) >= @startDate`;
+    }
+    if (endDate) {
+      toolErrorQuery += ` AND TRY_CAST(te.error_timestamp AS DATE) <= @endDate`;
+    }
+    if (channel) {
+      toolErrorQuery += ` AND c.channel = @channel`;
+    }
+
+    toolErrorQuery += `
+      GROUP BY te.tool_name, te.impact_level, te.error_type
+      ORDER BY COUNT(*) DESC
+    `;
+
+    const toolErrors = await query(toolErrorQuery, params);
+
+    // Combine regular errors and tool errors
+    const allErrors = [
+      ...errorTypes.map((e: any) => ({
+        errorType: e.errorType,
+        errorCategory: e.errorCategory,
+        errorCount: parseInt(e.errorCount || 0),
+        callsAffected: parseInt(e.callsAffected || 0),
+        recoveryRate: parseFloat(e.recoveryRate || 0),
+        avgSentiment: parseFloat(e.avgSentiment || 0.5),
+        avgErrorsPerCall: parseFloat(e.avgErrorsPerCall || 0),
+        errorSubType: 'General',
+        isToolError: false,
+      })),
+      ...toolErrors.map((e: any) => ({
+        errorType: `${e.errorType}`, // Tool name
+        errorCategory: e.errorCategory, // Impact level
+        errorCount: parseInt(e.errorCount || 0),
+        callsAffected: parseInt(e.callsAffected || 0),
+        recoveryRate: parseFloat(e.recoveryRate || 0),
+        avgSentiment: parseFloat(e.avgSentiment || 0.5),
+        avgErrorsPerCall: parseFloat(e.avgRetryCount || 0),
+        errorSubType: e.errorSubType, // Timeout, ServerError, etc.
+        isToolError: true,
+      }))
+    ];
+
     // Calculate percentage and add descriptions
-    const totalErrors = errorTypes.reduce((sum: number, e: any) => sum + parseInt(e.errorCount || 0), 0);
-    const errorTypesWithPercentage = errorTypes.map((e: any) => {
-      // Generate description based on severity level
-      let errorDescription = 'Other technical errors';
-      if (e.errorType === 'High Frequency Errors') errorDescription = 'Calls with 5 or more errors requiring immediate attention';
-      else if (e.errorType === 'Multiple Errors') errorDescription = 'Calls with 3-4 errors showing recurring issues';
-      else if (e.errorType === 'Moderate Errors') errorDescription = 'Calls with 2 errors indicating minor problems';
-      else if (e.errorType === 'Single Error') errorDescription = 'Calls with a single error occurrence';
+    const totalErrors = allErrors.reduce((sum: number, e: any) => sum + parseInt(e.errorCount || 0), 0);
+    const errorTypesWithPercentage = allErrors.map((e: any) => {
+      // Generate description based on type
+      let errorDescription = '';
+      
+      if (e.isToolError) {
+        // Tool error descriptions
+        errorDescription = `${e.errorType} integration failures (${e.errorSubType})`;
+      } else {
+        // Regular error descriptions
+        if (e.errorType === 'High Frequency Errors') errorDescription = 'Calls with 5 or more errors requiring immediate attention';
+        else if (e.errorType === 'Multiple Errors') errorDescription = 'Calls with 3-4 errors showing recurring issues';
+        else if (e.errorType === 'Moderate Errors') errorDescription = 'Calls with 2 errors indicating minor problems';
+        else if (e.errorType === 'Single Error') errorDescription = 'Calls with a single error occurrence';
+        else errorDescription = 'Other technical errors';
+      }
       
       return {
         errorType: e.errorType,
         errorCategory: e.errorCategory,
         errorDescription: errorDescription,
-        errorCount: parseInt(e.errorCount || 0),
-        percentage: totalErrors > 0 ? (parseInt(e.errorCount || 0) / totalErrors) * 100 : 0,
-        callsAffected: parseInt(e.callsAffected || 0),
-        recoveryRate: parseFloat(e.recoveryRate || 0),
-        avgSentiment: parseFloat(e.avgSentiment || 0.5),
-        avgErrorsPerCall: parseFloat(e.avgErrorsPerCall || 0),
+        errorCount: e.errorCount,
+        percentage: totalErrors > 0 ? (e.errorCount / totalErrors) * 100 : 0,
+        callsAffected: e.callsAffected,
+        recoveryRate: e.recoveryRate,
+        avgSentiment: e.avgSentiment,
+        avgErrorsPerCall: e.avgErrorsPerCall,
+        errorSubType: e.errorSubType,
+        isToolError: e.isToolError,
       };
     });
 
@@ -135,14 +214,36 @@ export async function GET(request: Request) {
 
     const totals = await query(totalsQuery, params);
 
+    // Get tool errors count
+    let toolErrorTotalsQuery = `
+      SELECT 
+        COUNT(DISTINCT call_id) AS callsWithToolErrors,
+        COUNT(*) AS totalToolErrors
+      FROM [TeneoMemory].[ToolErrors]
+      WHERE 1=1
+    `;
+
+    if (startDate) {
+      toolErrorTotalsQuery += ` AND TRY_CAST(error_timestamp AS DATE) >= @startDate`;
+    }
+    if (endDate) {
+      toolErrorTotalsQuery += ` AND TRY_CAST(error_timestamp AS DATE) <= @endDate`;
+    }
+
+    const toolErrorTotals = await query(toolErrorTotalsQuery, params);
+
     const response: DrilldownApiResponse = {
       success: true,
       data: {
         totalCalls: totals[0]?.totalCalls || 0,
         callsWithErrors: totals[0]?.callsWithErrors || 0,
-        totalErrors: totals[0]?.totalErrors || 0,
+        totalErrors: (totals[0]?.totalErrors || 0) + (toolErrorTotals[0]?.totalToolErrors || 0),
         errorRate: totals[0]?.errorRate || 0,
         errorTypes: errorTypesWithPercentage,
+        toolErrorStats: {
+          callsWithToolErrors: toolErrorTotals[0]?.callsWithToolErrors || 0,
+          totalToolErrors: toolErrorTotals[0]?.totalToolErrors || 0,
+        },
       },
       metadata: {
         totalCount: errorTypesWithPercentage.length,
