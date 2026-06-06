@@ -89,47 +89,54 @@ export async function GET(request: Request) {
     const errorTypes = await query(sqlQuery, params);
 
     // Query Tool Errors (integration failures)
-    let toolErrorQuery = `
-      SELECT 
-        te.tool_name AS errorType,
-        te.impact_level AS errorCategory,
-        te.error_type AS errorSubType,
-        COUNT(DISTINCT te.call_id) AS callsAffected,
-        COUNT(*) AS errorCount,
-        CAST(SUM(CASE WHEN te.resolved IN ('True', '1') THEN 1 ELSE 0 END) * 100.0 / 
-          NULLIF(COUNT(*), 0) AS DECIMAL(5,2)) AS recoveryRate,
-        AVG(
-          CASE 
-            WHEN c.avg_satisfaction_score = 'Satisfied' THEN 0.8
-            WHEN c.avg_satisfaction_score = 'Happy' THEN 0.9
-            WHEN c.avg_satisfaction_score = 'Neutral' THEN 0.5
-            WHEN c.avg_satisfaction_score = 'Stressed' THEN 0.3
-            WHEN c.avg_satisfaction_score = 'Frustrated' THEN 0.2
-            ELSE 0.5
-          END
-        ) AS avgSentiment,
-        AVG(CAST(te.retry_count AS FLOAT)) AS avgRetryCount
-      FROM [TeneoMemory].[ToolErrors] te
-      LEFT JOIN [TeneoMemory].[Sessions] c ON te.call_id = c.call_id
-      WHERE 1=1
-    `;
+    // Wrap in try-catch in case ToolErrors table doesn't exist yet
+    let toolErrors: any[] = [];
+    try {
+      let toolErrorQuery = `
+        SELECT 
+          te.tool_name AS errorType,
+          te.impact_level AS errorCategory,
+          te.error_type AS errorSubType,
+          COUNT(DISTINCT te.call_id) AS callsAffected,
+          COUNT(*) AS errorCount,
+          CAST(SUM(CASE WHEN te.resolved IN ('True', '1') THEN 1 ELSE 0 END) * 100.0 / 
+            NULLIF(COUNT(*), 0) AS DECIMAL(5,2)) AS recoveryRate,
+          AVG(
+            CASE 
+              WHEN c.avg_satisfaction_score = 'Satisfied' THEN 0.8
+              WHEN c.avg_satisfaction_score = 'Happy' THEN 0.9
+              WHEN c.avg_satisfaction_score = 'Neutral' THEN 0.5
+              WHEN c.avg_satisfaction_score = 'Stressed' THEN 0.3
+              WHEN c.avg_satisfaction_score = 'Frustrated' THEN 0.2
+              ELSE 0.5
+            END
+          ) AS avgSentiment,
+          AVG(CAST(te.retry_count AS FLOAT)) AS avgRetryCount
+        FROM [TeneoMemory].[ToolErrors] te
+        LEFT JOIN [TeneoMemory].[Sessions] c ON te.call_id = c.call_id
+        WHERE 1=1
+      `;
 
-    if (startDate) {
-      toolErrorQuery += ` AND TRY_CAST(te.error_timestamp AS DATE) >= @startDate`;
-    }
-    if (endDate) {
-      toolErrorQuery += ` AND TRY_CAST(te.error_timestamp AS DATE) <= @endDate`;
-    }
-    if (channel) {
-      toolErrorQuery += ` AND c.channel = @channel`;
-    }
+      if (startDate) {
+        toolErrorQuery += ` AND TRY_CAST(te.error_timestamp AS DATE) >= @startDate`;
+      }
+      if (endDate) {
+        toolErrorQuery += ` AND TRY_CAST(te.error_timestamp AS DATE) <= @endDate`;
+      }
+      if (channel) {
+        toolErrorQuery += ` AND c.channel = @channel`;
+      }
 
-    toolErrorQuery += `
-      GROUP BY te.tool_name, te.impact_level, te.error_type
-      ORDER BY COUNT(*) DESC
-    `;
+      toolErrorQuery += `
+        GROUP BY te.tool_name, te.impact_level, te.error_type
+        ORDER BY COUNT(*) DESC
+      `;
 
-    const toolErrors = await query(toolErrorQuery, params);
+      toolErrors = await query(toolErrorQuery, params);
+    } catch (toolErrorQueryError) {
+      console.warn('ToolErrors table not found or query failed, skipping tool errors:', toolErrorQueryError);
+      toolErrors = [];
+    }
 
     // Combine regular errors and tool errors
     const allErrors = [
@@ -214,23 +221,29 @@ export async function GET(request: Request) {
 
     const totals = await query(totalsQuery, params);
 
-    // Get tool errors count
-    let toolErrorTotalsQuery = `
-      SELECT 
-        COUNT(DISTINCT call_id) AS callsWithToolErrors,
-        COUNT(*) AS totalToolErrors
-      FROM [TeneoMemory].[ToolErrors]
-      WHERE 1=1
-    `;
+    // Get tool errors count (with error handling if table doesn't exist)
+    let toolErrorTotals: any[] = [{ callsWithToolErrors: 0, totalToolErrors: 0 }];
+    try {
+      let toolErrorTotalsQuery = `
+        SELECT 
+          COUNT(DISTINCT call_id) AS callsWithToolErrors,
+          COUNT(*) AS totalToolErrors
+        FROM [TeneoMemory].[ToolErrors]
+        WHERE 1=1
+      `;
 
-    if (startDate) {
-      toolErrorTotalsQuery += ` AND TRY_CAST(error_timestamp AS DATE) >= @startDate`;
-    }
-    if (endDate) {
-      toolErrorTotalsQuery += ` AND TRY_CAST(error_timestamp AS DATE) <= @endDate`;
-    }
+      if (startDate) {
+        toolErrorTotalsQuery += ` AND TRY_CAST(error_timestamp AS DATE) >= @startDate`;
+      }
+      if (endDate) {
+        toolErrorTotalsQuery += ` AND TRY_CAST(error_timestamp AS DATE) <= @endDate`;
+      }
 
-    const toolErrorTotals = await query(toolErrorTotalsQuery, params);
+      toolErrorTotals = await query(toolErrorTotalsQuery, params);
+    } catch (toolErrorTotalsQueryError) {
+      console.warn('ToolErrors table not found for totals, using zero counts:', toolErrorTotalsQueryError);
+      toolErrorTotals = [{ callsWithToolErrors: 0, totalToolErrors: 0 }];
+    }
 
     const response: DrilldownApiResponse = {
       success: true,

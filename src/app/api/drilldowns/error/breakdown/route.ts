@@ -30,79 +30,89 @@ export async function GET(request: Request) {
 
     // Check if this is a tool error or regular error
     if (isToolError) {
-      // Tool error - query ToolErrors table
-      const toolErrorQuery = `
-        SELECT 
-          c.call_id AS callId,
-          c.call_id AS sessionId,
-          TRY_CAST(c.call_start_timestamp AS DATE) AS callDate,
-          c.call_start_timestamp AS callStartTime,
-          c.channel AS channel,
-          CAST(c.duration_seconds AS INT) AS duration,
-          CAST(c.total_turns AS INT) AS totalTurns,
-          c.avg_satisfaction_score AS customerSentiment,
-          c.initial_sentiment_category AS initialSentiment,
-          c.final_sentiment_category AS finalSentiment,
-          CASE WHEN c.successful_resolution IN ('True', '1') THEN 'Resolved' ELSE 'Unresolved' END AS resolutionStatus,
-          CASE WHEN c.successful_resolution IN ('True', '1') THEN 1 ELSE 0 END AS successfulResolution,
-          COUNT(DISTINCT te.error_id) AS errorCount,
-          STRING_AGG(te.error_type, ', ') WITHIN GROUP (ORDER BY te.error_timestamp) AS errorTypes,
-          STRING_AGG(te.impact_level, ', ') WITHIN GROUP (ORDER BY te.error_timestamp) AS impactLevels,
-          SUM(CASE WHEN te.resolved IN ('True', '1') THEN 1 ELSE 0 END) AS resolvedToolErrors
-        FROM [TeneoMemory].[ToolErrors] te
-        INNER JOIN [TeneoMemory].[Sessions] c ON te.call_id = c.call_id
-        WHERE te.tool_name = @errorType
-        GROUP BY 
-          c.call_id, 
-          c.call_start_timestamp, 
-          c.channel, 
-          c.duration_seconds, 
-          c.total_turns,
-          c.avg_satisfaction_score,
-          c.initial_sentiment_category,
-          c.final_sentiment_category,
-          c.successful_resolution
-        ORDER BY c.call_start_timestamp DESC
-      `;
+      // Tool error - query ToolErrors table (with error handling)
+      try {
+        const toolErrorQuery = `
+          SELECT 
+            c.call_id AS callId,
+            c.call_id AS sessionId,
+            TRY_CAST(c.call_start_timestamp AS DATE) AS callDate,
+            c.call_start_timestamp AS callStartTime,
+            c.channel AS channel,
+            CAST(c.duration_seconds AS INT) AS duration,
+            CAST(c.total_turns AS INT) AS totalTurns,
+            c.avg_satisfaction_score AS customerSentiment,
+            c.initial_sentiment_category AS initialSentiment,
+            c.final_sentiment_category AS finalSentiment,
+            CASE WHEN c.successful_resolution IN ('True', '1') THEN 'Resolved' ELSE 'Unresolved' END AS resolutionStatus,
+            CASE WHEN c.successful_resolution IN ('True', '1') THEN 1 ELSE 0 END AS successfulResolution,
+            COUNT(DISTINCT te.error_id) AS errorCount,
+            STRING_AGG(te.error_type, ', ') WITHIN GROUP (ORDER BY te.error_timestamp) AS errorTypes,
+            STRING_AGG(te.impact_level, ', ') WITHIN GROUP (ORDER BY te.error_timestamp) AS impactLevels,
+            SUM(CASE WHEN te.resolved IN ('True', '1') THEN 1 ELSE 0 END) AS resolvedToolErrors
+          FROM [TeneoMemory].[ToolErrors] te
+          INNER JOIN [TeneoMemory].[Sessions] c ON te.call_id = c.call_id
+          WHERE te.tool_name = @errorType
+          GROUP BY 
+            c.call_id, 
+            c.call_start_timestamp, 
+            c.channel, 
+            c.duration_seconds, 
+            c.total_turns,
+            c.avg_satisfaction_score,
+            c.initial_sentiment_category,
+            c.final_sentiment_category,
+            c.successful_resolution
+          ORDER BY c.call_start_timestamp DESC
+        `;
 
-      const callsResult = await query(toolErrorQuery, { errorType });
+        const callsResult = await query(toolErrorQuery, { errorType });
 
-      // Get tool error category for description
-      const categoryQuery = await query(
-        `SELECT TOP 1 impact_level, error_type FROM [TeneoMemory].[ToolErrors] WHERE tool_name = @errorType`,
-        { errorType }
-      );
+        // Get tool error category for description
+        const categoryQuery = await query(
+          `SELECT TOP 1 impact_level, error_type FROM [TeneoMemory].[ToolErrors] WHERE tool_name = @errorType`,
+          { errorType }
+        );
 
-      errorInfo = {
-        category: categoryQuery[0]?.impact_level || 'Unknown',
-        description: `${errorType} integration failures (${categoryQuery[0]?.error_type || 'Various'} errors)`,
-      };
+        errorInfo = {
+          category: categoryQuery[0]?.impact_level || 'Unknown',
+          description: `${errorType} integration failures (${categoryQuery[0]?.error_type || 'Various'} errors)`,
+        };
 
-      // Transform to DrilldownCallData format
-      calls = callsResult.map((row: any) => ({
-        callId: row.callId,
-        sessionId: row.sessionId,
-        callDate: row.callDate,
-        callStartTime: row.callStartTime,
-        channel: row.channel,
-        duration: row.duration || 0,
-        totalTurns: row.totalTurns || 0,
-        customerSentiment: row.customerSentiment || 'Neutral',
-        initialSentiment: row.initialSentiment,
-        finalSentiment: row.finalSentiment,
-        callOutcome: row.resolutionStatus || 'Unknown',
-        resolutionStatus: row.resolutionStatus,
-        successfulResolution: row.successfulResolution === 1,
-        metadata: {
-          errorCount: row.errorCount || 0,
-          errorType: errorType,
-          errorTypes: row.errorTypes,
-          impactLevels: row.impactLevels,
-          resolvedToolErrors: row.resolvedToolErrors || 0,
-          isToolError: true,
-          sentimentJourney: `${row.initialSentiment || 'Unknown'} → ${row.finalSentiment || 'Unknown'}`,
-        },
-      }));
+        // Transform to DrilldownCallData format
+        calls = callsResult.map((row: any) => ({
+          callId: row.callId,
+          sessionId: row.sessionId,
+          callDate: row.callDate,
+          callStartTime: row.callStartTime,
+          channel: row.channel,
+          duration: row.duration || 0,
+          totalTurns: row.totalTurns || 0,
+          customerSentiment: row.customerSentiment || 'Neutral',
+          initialSentiment: row.initialSentiment,
+          finalSentiment: row.finalSentiment,
+          callOutcome: row.resolutionStatus || 'Unknown',
+          resolutionStatus: row.resolutionStatus,
+          successfulResolution: row.successfulResolution === 1,
+          metadata: {
+            errorCount: row.errorCount || 0,
+            errorType: errorType,
+            errorTypes: row.errorTypes,
+            impactLevels: row.impactLevels,
+            resolvedToolErrors: row.resolvedToolErrors || 0,
+            isToolError: true,
+            sentimentJourney: `${row.initialSentiment || 'Unknown'} → ${row.finalSentiment || 'Unknown'}`,
+          },
+        }));
+      } catch (toolErrorQueryError) {
+        console.error('ToolErrors table query failed:', toolErrorQueryError);
+        // Return empty result set with error info
+        errorInfo = {
+          category: 'Unknown',
+          description: `${errorType} integration failures (ToolErrors table not available)`,
+        };
+        calls = [];
+      }
     } else {
       // Regular error - existing logic
       const getErrorInfo = (errorType: string): { category: string; description: string } => {
