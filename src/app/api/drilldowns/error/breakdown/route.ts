@@ -46,7 +46,8 @@ export async function GET(request: Request) {
             c.final_sentiment_category AS finalSentiment,
             CASE WHEN c.successful_resolution IN ('True', '1') THEN 'Resolved' ELSE 'Unresolved' END AS resolutionStatus,
             CASE WHEN c.successful_resolution IN ('True', '1') THEN 1 ELSE 0 END AS successfulResolution,
-            COUNT(DISTINCT te.error_id) AS errorCount,
+            COUNT(DISTINCT te.error_id) AS toolErrorCount,
+            TRY_CAST(c.error_count AS INT) AS conversationErrorCount,
             STRING_AGG(te.error_type, ', ') WITHIN GROUP (ORDER BY te.error_timestamp) AS errorTypes,
             STRING_AGG(te.impact_level, ', ') WITHIN GROUP (ORDER BY te.error_timestamp) AS impactLevels,
             SUM(CASE WHEN te.resolved IN ('True', '1') THEN 1 ELSE 0 END) AS resolvedToolErrors
@@ -62,7 +63,8 @@ export async function GET(request: Request) {
             c.avg_satisfaction_score,
             c.initial_sentiment_category,
             c.final_sentiment_category,
-            c.successful_resolution
+            c.successful_resolution,
+            c.error_count
           ORDER BY c.call_start_timestamp DESC
         `;
 
@@ -80,30 +82,38 @@ export async function GET(request: Request) {
         };
 
         // Transform to DrilldownCallData format
-        calls = callsResult.map((row: any) => ({
-          callId: row.callId,
-          sessionId: row.sessionId,
-          callDate: row.callDate,
-          callStartTime: row.callStartTime,
-          channel: row.channel,
-          duration: row.duration || 0,
-          totalTurns: row.totalTurns || 0,
-          customerSentiment: row.customerSentiment || 'Neutral',
-          initialSentiment: row.initialSentiment,
-          finalSentiment: row.finalSentiment,
-          callOutcome: row.resolutionStatus || 'Unknown',
-          resolutionStatus: row.resolutionStatus,
-          successfulResolution: row.successfulResolution === 1,
-          metadata: {
-            errorCount: row.errorCount || 0,
-            errorType: errorType,
-            errorTypes: row.errorTypes,
-            impactLevels: row.impactLevels,
-            resolvedToolErrors: row.resolvedToolErrors || 0,
-            isToolError: true,
-            sentimentJourney: `${row.initialSentiment || 'Unknown'} → ${row.finalSentiment || 'Unknown'}`,
-          },
-        }));
+        calls = callsResult.map((row: any) => {
+          const toolErrors = row.toolErrorCount || 0;
+          const conversationErrors = row.conversationErrorCount || 0;
+          const totalErrors = toolErrors + conversationErrors;
+          
+          return {
+            callId: row.callId,
+            sessionId: row.sessionId,
+            callDate: row.callDate,
+            callStartTime: row.callStartTime,
+            channel: row.channel,
+            duration: row.duration || 0,
+            totalTurns: row.totalTurns || 0,
+            customerSentiment: row.customerSentiment || 'Neutral',
+            initialSentiment: row.initialSentiment,
+            finalSentiment: row.finalSentiment,
+            callOutcome: row.resolutionStatus || 'Unknown',
+            resolutionStatus: row.resolutionStatus,
+            successfulResolution: row.successfulResolution === 1,
+            metadata: {
+              errorCount: totalErrors,
+              toolErrorCount: toolErrors,
+              conversationErrorCount: conversationErrors,
+              errorType: errorType,
+              errorTypes: row.errorTypes,
+              impactLevels: row.impactLevels,
+              resolvedToolErrors: row.resolvedToolErrors || 0,
+              isToolError: true,
+              sentimentJourney: `${row.initialSentiment || 'Unknown'} → ${row.finalSentiment || 'Unknown'}`,
+            },
+          };
+        });
       } catch (toolErrorQueryError) {
         console.error('ToolError table query failed:', toolErrorQueryError);
         // Return empty result set with error info

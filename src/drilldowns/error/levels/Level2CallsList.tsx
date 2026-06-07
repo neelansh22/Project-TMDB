@@ -140,14 +140,30 @@ export default function ErrorCallsList({
                       {call.totalTurns || 0}
                     </td>
                     <td className="py-3 px-4">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-900 text-red-300">
-                        {call.metadata?.errorCount || 0}
-                        {call.metadata?.isToolError && call.metadata?.resolvedToolErrors !== undefined && (
-                          <span className="ml-1 text-green-300">
-                            ({call.metadata.resolvedToolErrors} resolved)
-                          </span>
+                      <div className="space-y-1">
+                        <div className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-900 text-red-300">
+                          {call.metadata?.errorCount || 0} total error{(call.metadata?.errorCount || 0) !== 1 ? 's' : ''}
+                        </div>
+                        {call.metadata?.isToolError && (
+                          <div className="flex flex-col gap-0.5 text-xs">
+                            {call.metadata?.toolErrorCount > 0 && (
+                              <span className="text-blue-400">
+                                🔧 {call.metadata.toolErrorCount} integration
+                              </span>
+                            )}
+                            {call.metadata?.conversationErrorCount > 0 && (
+                              <span className="text-orange-400">
+                                💬 {call.metadata.conversationErrorCount} conversation
+                              </span>
+                            )}
+                            {call.metadata?.resolvedToolErrors > 0 && (
+                              <span className="text-green-400">
+                                ✓ {call.metadata.resolvedToolErrors} resolved
+                              </span>
+                            )}
+                          </div>
                         )}
-                      </span>
+                      </div>
                       {call.metadata?.isToolError && call.metadata?.errorTypes && (
                         <div className="text-xs text-gray-400 mt-1">
                           {call.metadata.errorTypes}
